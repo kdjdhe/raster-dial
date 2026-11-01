@@ -22,6 +22,7 @@ Android 9+ 的光栅动态壁纸：倾斜手机，画面在 2–3 张图之间�
 - **自定义组**：1–6 个槽位，选图、旋转 90°、↑↓ 排序、删除。
 - **平板/折叠屏**：运行时按 surface 宽高比选竖/横素材，aspect-fill 裁切，按屏幕旋转补偿方向。
 - **只做壁纸**：不接管锁屏、不刷机、无开机自启服务。
+- **应用内更新**：成都主源 + GitHub 回退，SHA-256 校验后交给系统安装器。
 
 ### 效果细节
 
@@ -84,6 +85,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | `app/src/main/res/` | 图标、字符串、壁纸元数据 |
 | `tools/build_groups.py` | 竖屏素材 + `groups.json` 生成 |
 | `tools/build_landscape.py` | 横屏素材生成 |
+| `tools/publish_update.py` | 从 APK 生成 `update.json` |
+| `tools/sync_chengdu.sh` | 上传 `update.json` + APK 到成都服务器 |
+| `update.json` | App 更新清单（versionCode、SHA-256、成都/GitHub 镜像） |
+| `docs/UPDATE_SOURCE.md` | 成都服务器 + GitHub 更新源部署与发布流程 |
 | `docs/COMPATIBILITY.md` | 其他 Android 设备与平板的兼容性分析 |
 | `docs/screenshots/` | README 截图 |
 
@@ -98,6 +103,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 编辑自定义光栅组 | 1–6 槽位，选图 / 旋转 / 排序 / 删除 |
 | 设为光栅壁纸 | 打开系统动态壁纸选择器 |
 | 清除壁纸 | 恢复系统默认静态壁纸 |
+| 检查更新 | 读取成都主源 + GitHub 回退；有新版时下载、校验 SHA-256 |
 
 调试广播（必须带 `-n`；这台 EMUI 的隐式广播不会送达）：
 
@@ -139,6 +145,8 @@ adb shell am broadcast -n com.raster.dial/.WallDebugReceiver \
 ./gradlew lint                   # Android Lint
 python tools/build_groups.py     # 重新生成竖屏素材 + groups.json
 python tools/build_landscape.py  # 重新生成横屏素材
+python tools/publish_update.py --chengdu-base https://updates.example.com/raster-dial
+CHENGDU_HOST=user@host tools/sync_chengdu.sh work/raster-dial-0.1.2-debug.apk
 ```
 
 素材生成默认读取仓库根目录的 `art` 目录；也可以把 `RASTER_SRC` 指向你的原图目录：
@@ -180,6 +188,20 @@ gradle test             # 本机安装 Gradle 9.7.1 时等价
 - 文件在 App 私有目录（`files` 下的 `custom` 子目录）：`group.json` + 每个槽位的 `m_*.webp`（master）与 `s_*.webp`（旋转后 display）；
 - 导入按 EXIF 摆正，master 最长边 3000px，display 最长边 1600px。
 
+## 更新源
+
+App 的更新检查是「成都主源 + GitHub 回退」：
+
+1. 读取成都 `update.json`（失败则读 GitHub `main` 的 `update.json`），取 `versionCode` 较大者；
+2. 有新版时按 `apkUrls` 顺序下载，校验 SHA-256；
+3. 校验通过后打开系统安装器（需要允许“安装未知应用”）。
+
+仓库根目录的 `update.json` 是 GitHub 回退源，APK 指向 Release 资产；成都服务器只需静态托管同一份 JSON + APK。部署、Caddy/Nginx/Cloudflare Tunnel、签名和发布步骤见 [docs/UPDATE_SOURCE.md](docs/UPDATE_SOURCE.md)。
+
+当前 `BuildConfig` 的主源是占位 `https://updates.example.com/raster-dial/update.json`；换成你的成都域名后重新构建。GitHub 回退现在就能用。
+
+> 0.1.2 起才有应用内更新；0.1.1 及更早需要手动安装一次 0.1.2。
+
 ## 素材与许可
 
 - **代码**：MIT，见 [LICENSE](LICENSE)。
@@ -194,6 +216,7 @@ gradle test             # 本机安装 Gradle 9.7.1 时等价
 - 内存优化空间：按屏幕尺寸降采样、RGB_565，以及自定义图 display 最长边 1600px。
 - 真实平板/折叠屏的冒烟测试在路线图中。
 - 内置官方素材的版权风险见上。
+- 更新 APK 必须与已安装 App 使用同一签名；当前是 debug 签名，成都服务器必须镜像同一份 APK，不能在服务器上重新构建。
 
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 

@@ -199,6 +199,9 @@ public class MainActivity extends Activity {
         // ---------- tools ----------
         LinearLayout tools = Ui.card(this);
         tools.addView(Ui.text(this, "工具", 12, Ui.MUTED, true));
+        TextView checkUpdate = Ui.button(this, "检查更新", false);
+        checkUpdate.setOnClickListener(v -> UpdateChecker.check(this, true));
+        Ui.addWithTop(tools, checkUpdate, this, 10);
         TextView clearDebug = Ui.button(this, "清除调试覆盖（回到传感器）", false);
         clearDebug.setOnClickListener(v -> clearDebugOverride());
         Ui.addWithTop(tools, clearDebug, this, 10);
@@ -206,7 +209,8 @@ public class MainActivity extends Activity {
 
         TextView note = Ui.text(this,
                 "只改壁纸，不接管锁屏；壁纸是系统管理的 WallpaperService，不会拦截触摸。\n"
-                        + "调试行显示组名 / 横竖 / 旋转 / phase / 段号 / 段内进度 / 方向 / 帧耗时。",
+                        + "调试行显示组名 / 横竖 / 旋转 / phase / 段号 / 段内进度 / 方向 / 帧耗时。\n"
+                        + "更新检查优先走成都源，失败自动回退 GitHub。",
                 11, 0xFF777782, false);
         note.setLineSpacing(Ui.dp(this, 2), 1f);
         note.setPadding(0, Ui.dp(this, 18), 0, 0);
@@ -329,6 +333,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        UpdateChecker.autoCheck(this);
+        UpdateChecker.resumePendingInstall(this);
         if (spinner != null && groups != null) {
             selectCurrentGroup();
         }

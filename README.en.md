@@ -22,6 +22,7 @@ A lenticular live wallpaper for Android 9+: tilt the phone and the image transit
 - **Custom groups**: 1–6 slots with pick, rotate 90°, reorder, and delete.
 - **Tablets/foldables**: the runtime surface aspect ratio selects portrait/landscape assets; aspect-fill cropping; display-rotation compensation.
 - **Wallpaper only**: no lock-screen takeover, no flashing, no boot service.
+- **In-app updates**: Chengdu primary + GitHub fallback; SHA-256 verification; system installer.
 
 ### Effect Details
 
@@ -84,6 +85,10 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 | `app/src/main/res/` | Icons, strings, wallpaper metadata |
 | `tools/build_groups.py` | Builds portrait assets and `groups.json` |
 | `tools/build_landscape.py` | Builds landscape assets |
+| `tools/publish_update.py` | Builds `update.json` from an APK |
+| `tools/sync_chengdu.sh` | Uploads `update.json` + APK to the Chengdu server |
+| `update.json` | App update manifest (versionCode, SHA-256, Chengdu/GitHub mirrors) |
+| `docs/UPDATE_SOURCE.md` | Chengdu + GitHub update source deployment and release guide |
 | `docs/COMPATIBILITY.md` | Compatibility analysis for other Android devices and tablets |
 | `docs/screenshots/` | README screenshots |
 
@@ -98,6 +103,7 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 | Edit custom group | 1–6 slots; pick / rotate / reorder / delete |
 | Set as live wallpaper | Opens the system live-wallpaper picker |
 | Clear wallpaper | Restores the system default static wallpaper |
+| Check for updates | Reads the Chengdu primary + GitHub fallback; downloads and verifies SHA-256 |
 
 Debug broadcast (the `-n` component is required; implicit broadcasts are not delivered on this EMUI build):
 
@@ -139,6 +145,8 @@ The same code covers 20:9 phones, 19.5:9, 21:9, 16:10 tablets, and folded/unfold
 ./gradlew lint                   # Android Lint
 python tools/build_groups.py     # rebuild portrait assets + groups.json
 python tools/build_landscape.py  # rebuild landscape assets
+python tools/publish_update.py --chengdu-base https://updates.example.com/raster-dial
+CHENGDU_HOST=user@host tools/sync_chengdu.sh work/raster-dial-0.1.2-debug.apk
 ```
 
 Asset generation reads the repository's `art` directory by default; you can also point `RASTER_SRC` at your source-art directory:
@@ -180,6 +188,20 @@ Manual acceptance on a device:
 - Files live in the app's private `files` directory under `custom`: `group.json` plus each slot's `m_*.webp` (master) and `s_*.webp` (rotated display);
 - Imports are EXIF-corrected; the master's longest edge is 3000 px and the display's longest edge is 1600 px.
 
+## Update Source
+
+The app checks for updates with a Chengdu primary and a GitHub fallback:
+
+1. Read the Chengdu `update.json` (fall back to the GitHub `main` copy); use the higher `versionCode`.
+2. If newer, download the `apkUrls` in order and verify SHA-256.
+3. On success, open the system installer (allow "install unknown apps" once).
+
+The repo's `update.json` is the GitHub fallback; the APK points at the Release asset. The Chengdu server only hosts a static copy of the JSON + APK. Deployment, Caddy/Nginx/Cloudflare Tunnel, signing, and release steps are in [docs/UPDATE_SOURCE.md](docs/UPDATE_SOURCE.md).
+
+The current primary in `BuildConfig` is the placeholder `https://updates.example.com/raster-dial/update.json`; rebuild after replacing it with your Chengdu domain. The GitHub fallback works now.
+
+> The in-app updater starts in 0.1.2; 0.1.1 and earlier need a one-time manual install of 0.1.2.
+
 ## Assets and License
 
 - **Code**: MIT; see [LICENSE](LICENSE).
@@ -194,6 +216,7 @@ Manual acceptance on a device:
 - Memory headroom: downscale for the target screen, RGB_565, and a 1600 px display edge for custom images.
 - A real tablet/foldable smoke test is on the roadmap.
 - The official artwork carries the IP risk described above.
+- The update APK must be signed with the same key as the installed app; current builds are debug-signed, and the Chengdu server must mirror the exact APK.
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 

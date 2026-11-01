@@ -1,0 +1,13 @@
+{
+  "versionCode": 3,
+  "versionName": "0.1.2",
+  "minSdk": 28,
+  "publishedAt": "2026-11-01T07:00:58Z",
+  "sha256": "6a539310f628d4ecc9ba3d97dc99a7ef63de78556ca5e97aec425e845b6bb37e",
+  "size": 8878846,
+  "notes": "0.1.2: in-app updates (Chengdu primary + GitHub fallback), SHA-256 verification; 5 demo groups.",
+  "apkUrls": [
+    "https://updates.example.com/raster-dial/raster-dial-0.1.2-debug.apk",
+    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.2/raster-dial-0.1.2-debug.apk"
+  ]
+}

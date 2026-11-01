@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.2] - 2026-11-01
+
+### Added
+
+- In-app update check: Chengdu primary + GitHub fallback, versionCode comparison, SHA-256 verification, system installer
+- `update.json`, `tools/publish_update.py`, `tools/sync_chengdu.sh`, `docs/UPDATE_SOURCE.md`
+
+### Changed
+
+- versionCode 3 / versionName 0.1.2
+
 ## [0.1.1] - 2026-11-01
 
 ### Changed

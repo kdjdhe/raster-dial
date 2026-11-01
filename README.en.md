@@ -92,7 +92,7 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 | `docs/SIGNING.md` | debug/release signing, keystore, and update migration |
 | `keystore.properties.example` | Release signing example (the real file is gitignored) |
 | `docs/COMPATIBILITY.md` | Compatibility analysis for other Android devices and tablets |
-| `docs/screenshots/` | README screenshots |
+| `docs/screenshots/home.webp` `docs/screenshots/landscape.webp` | README screenshots (home / landscape) |
 
 ## Configuration and Usage
 
@@ -192,20 +192,6 @@ Manual acceptance on a device:
 - The old single custom group migrates to a group named 自定义; a fresh install seeds one "自定义" group with 2 Pyrois images;
 - Files live in the app's private `files` directory under `custom`: `groups.json` plus each image's `m_*.webp` (master) and `s_*.webp` (rotated display);
 - Imports are EXIF-corrected; the master's longest edge is 3000 px and the display's longest edge is 1600 px.
-
-## Update Source
-
-The app checks for updates with a Chengdu primary and a GitHub fallback:
-
-1. Read the Chengdu `update.json` (fall back to the GitHub `main` copy); use the higher `versionCode`.
-2. If newer, download the `apkUrls` in order and verify SHA-256.
-3. On success, open the system installer (allow "install unknown apps" once).
-
-The repo's `update.json` is the GitHub fallback; the APK points at the Release asset. The Chengdu server only hosts a static copy of the JSON + APK. Deployment, Caddy/Nginx/Cloudflare Tunnel, signing, and release steps are in [docs/UPDATE_SOURCE.md](docs/UPDATE_SOURCE.md); keystore and debug→release migration are in [docs/SIGNING.md](docs/SIGNING.md).
-
-The current primary in `BuildConfig` is the placeholder `https://updates.example.com/raster-dial/update.json`; rebuild after replacing it with your Chengdu domain. The GitHub fallback works now.
-
-> The in-app updater starts in 0.1.2; 0.1.1 and earlier need a one-time manual install of 0.1.2.
 
 ## Assets and License
 

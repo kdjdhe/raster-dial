@@ -92,7 +92,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | `docs/SIGNING.md` | debug/release 签名、keystore、更新源迁移 |
 | `keystore.properties.example` | release 签名配置示例（真实文件被 gitignore） |
 | `docs/COMPATIBILITY.md` | 其他 Android 设备与平板的兼容性分析 |
-| `docs/screenshots/` | README 截图 |
+| `docs/screenshots/home.webp` `docs/screenshots/landscape.webp` | README 截图（桌面 / 横屏） |
 
 ## 配置与使用
 
@@ -192,20 +192,6 @@ gradle test             # 本机安装 Gradle 9.7.1 时等价
 - 旧版单组自动迁移成 id=`custom`、名“自定义”的组；首次安装会 seed 一个“自定义”（2 张 Pyrois）；
 - 文件在 App 私有目录 `files` 下的 `custom` 子目录：`groups.json` + 每张图的 `m_*.webp`（master）与 `s_*.webp`（旋转后 display）；
 - 导入按 EXIF 摆正，master 最长边 3000px，display 最长边 1600px。
-
-## 更新源
-
-App 的更新检查是「成都主源 + GitHub 回退」：
-
-1. 读取成都 `update.json`（失败则读 GitHub `main` 的 `update.json`），取 `versionCode` 较大者；
-2. 有新版时按 `apkUrls` 顺序下载，校验 SHA-256；
-3. 校验通过后打开系统安装器（需要允许“安装未知应用”）。
-
-仓库根目录的 `update.json` 是 GitHub 回退源，APK 指向 Release 资产；成都服务器只需静态托管同一份 JSON + APK。部署、Caddy/Nginx/Cloudflare Tunnel、签名和发布步骤见 [docs/UPDATE_SOURCE.md](docs/UPDATE_SOURCE.md)；keystore、debug→release 迁移见 [docs/SIGNING.md](docs/SIGNING.md)。
-
-当前 `BuildConfig` 的主源是占位 `https://updates.example.com/raster-dial/update.json`；换成你的成都域名后重新构建。GitHub 回退现在就能用。
-
-> 0.1.2 起才有应用内更新；0.1.1 及更早需要手动安装一次 0.1.2。
 
 ## 素材与许可
 

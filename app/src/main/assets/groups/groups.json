@@ -1,0 +1,227 @@
+{
+  "default": "Pyrois",
+  "groups": [
+    {
+      "id": "Alice",
+      "name": "Alice",
+      "name_zh": "爱丽丝",
+      "count": 3,
+      "sources": [
+        "Alice1.png",
+        "Alice3.png",
+        "Alice2.png"
+      ],
+      "scores": [
+        66.99,
+        53.58,
+        48.34
+      ]
+    },
+    {
+      "id": "AstraYao",
+      "name": "Astra Yao",
+      "name_zh": "耀嘉音",
+      "count": 3,
+      "sources": [
+        "Astra Yao1.png",
+        "Astra Aao3.png",
+        "Astra Yao2.png"
+      ],
+      "scores": [
+        93.48,
+        77.73,
+        74.68
+      ]
+    },
+    {
+      "id": "Evelyn",
+      "name": "Evelyn",
+      "name_zh": "伊芙琳",
+      "count": 3,
+      "sources": [
+        "Evelyn.png",
+        "Evelyn3.png",
+        "Evelyn2.png"
+      ],
+      "scores": [
+        66.18,
+        41.35,
+        29.11
+      ]
+    },
+    {
+      "id": "Hugo",
+      "name": "Hugo",
+      "name_zh": "雨果",
+      "count": 3,
+      "sources": [
+        "Hugo3.png",
+        "Hugo2.png",
+        "Hugo1.png"
+      ],
+      "scores": [
+        124.36,
+        121.03,
+        115.98
+      ]
+    },
+    {
+      "id": "Miyabi",
+      "name": "Miyabi",
+      "name_zh": "星见雅",
+      "count": 3,
+      "sources": [
+        "Miyabi1.png",
+        "Miyabi3.png",
+        "Miyabi2.png"
+      ],
+      "scores": [
+        78.71,
+        47.43,
+        39.2
+      ]
+    },
+    {
+      "id": "Nicole",
+      "name": "Nicole",
+      "name_zh": "妮可",
+      "count": 3,
+      "sources": [
+        "Nicole1.png",
+        "Nicole3.png",
+        "Nicole2.png"
+      ],
+      "scores": [
+        73.61,
+        60.7,
+        53.73
+      ]
+    },
+    {
+      "id": "Norma",
+      "name": "Norma",
+      "name_zh": "诺姆",
+      "count": 3,
+      "sources": [
+        "Norma1.png",
+        "Norma3.png",
+        "Norma2.png"
+      ],
+      "scores": [
+        67.97,
+        65.29,
+        60.87
+      ]
+    },
+    {
+      "id": "Promeia",
+      "name": "Promeia",
+      "name_zh": "普罗米娅",
+      "count": 3,
+      "sources": [
+        "Promeia3.png",
+        "Promeia1.png",
+        "Promeiaa2.png"
+      ],
+      "scores": [
+        61.14,
+        59.86,
+        57.06
+      ]
+    },
+    {
+      "id": "Pyrois",
+      "name": "Pyrois",
+      "name_zh": "佩洛伊斯",
+      "count": 2,
+      "sources": [
+        "Pyrois2.png",
+        "Pyrois1.png"
+      ],
+      "scores": [
+        66.18,
+        57.99
+      ]
+    },
+    {
+      "id": "Remielle",
+      "name": "Remielle",
+      "name_zh": "蕾米埃尔",
+      "count": 3,
+      "sources": [
+        "Remielle3.png",
+        "Remielle2.png",
+        "Remielle1.png"
+      ],
+      "scores": [
+        52.95,
+        45.24,
+        43.66
+      ]
+    },
+    {
+      "id": "StarlightBilly",
+      "name": "Starlight-Billy",
+      "name_zh": "星徽·比利",
+      "count": 3,
+      "sources": [
+        "Starlight-Billy1.png",
+        "Satrlight-Billy3.png",
+        "Starlight-Billy2.png"
+      ],
+      "scores": [
+        114.4,
+        99.22,
+        93.43
+      ]
+    },
+    {
+      "id": "Vivian",
+      "name": "Vivian",
+      "name_zh": "薇薇安",
+      "count": 3,
+      "sources": [
+        "Vivian1.png",
+        "Vivian3.png",
+        "Vivian2.png"
+      ],
+      "scores": [
+        59.49,
+        47.82,
+        41.8
+      ]
+    },
+    {
+      "id": "YeShunguang",
+      "name": "Ye Shunguang",
+      "name_zh": "叶瞬光",
+      "count": 3,
+      "sources": [
+        "Ye Shunguang3.png",
+        "Ye Shunguang2.png",
+        "Ye Shunguang1.png"
+      ],
+      "scores": [
+        81.1,
+        76.38,
+        68.86
+      ]
+    },
+    {
+      "id": "Yixuan",
+      "name": "Yixuan",
+      "name_zh": "仪玄",
+      "count": 3,
+      "sources": [
+        "Yixuan1.jpg",
+        "Yixuan2.jpg",
+        "Yixuan3.jpg"
+      ],
+      "scores": [
+        83.35,
+        64.11,
+        62.24
+      ]
+    }
+  ]
+}

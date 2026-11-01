@@ -6,7 +6,7 @@
 Android 9+ 的光栅动态壁纸：倾斜手机，画面在 2–3 张图之间沿一条软渐变边界切换；内置 14 组角色、自定义槽位、平板横竖屏与消抖。
 
 <p align="center">
-  <img src="docs/screenshots/home.png" width="260" alt="桌面上的 Raster Dial 壁纸">
+  <img src="docs/screenshots/home.webp" width="260" alt="桌面上的 Raster Dial 壁纸">
   <img src="docs/screenshots/app.png" width="260" alt="Raster Dial 主界面">
   <img src="docs/screenshots/editor.png" width="260" alt="自定义光栅组编辑">
 </p>
@@ -128,7 +128,7 @@ adb shell am broadcast -n com.raster.dial/.WallDebugReceiver \
 
 同一套代码覆盖 20:9 手机、19.5:9、21:9、16:10 平板、折叠屏展开/折叠，不需要为每个分辨率准备一套图。详见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)。
 
-![横屏预览](docs/screenshots/landscape.png)
+![横屏预览](docs/screenshots/landscape.webp)
 
 ## 常用命令
 

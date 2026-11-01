@@ -4,6 +4,9 @@ build/
 app/build/
 local.properties
 
+# Local-only asset source (official artwork, see NOTICE)
+IMG_0310.JPG
+
 # IDE
 .idea/
 *.iml

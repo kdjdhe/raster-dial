@@ -1,13 +1,13 @@
 {
-  "versionCode": 3,
-  "versionName": "0.1.2",
+  "versionCode": 4,
+  "versionName": "0.1.3",
   "minSdk": 28,
-  "publishedAt": "2026-11-01T07:00:58Z",
-  "sha256": "6a539310f628d4ecc9ba3d97dc99a7ef63de78556ca5e97aec425e845b6bb37e",
-  "size": 8878846,
-  "notes": "0.1.2: in-app updates (Chengdu primary + GitHub fallback), SHA-256 verification; 5 demo groups.",
+  "publishedAt": "2026-11-01T08:22:33Z",
+  "sha256": "34dbf20d5c36146001ba5fe75068e3c3b0c22e2a70ee87aad4f46ac2630d6c7c",
+  "size": 8434265,
+  "notes": "0.1.3: 多个自定义组与选择器卡片。注意：本版更换正式签名，0.1.2 及更早版本请勿在 App 内直接更新——先卸载旧版，再从 GitHub Release 下载安装。",
   "apkUrls": [
-    "https://updates.example.com/raster-dial/raster-dial-0.1.2-debug.apk",
-    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.2/raster-dial-0.1.2-debug.apk"
+    "https://updates.example.com/raster-dial/raster-dial-0.1.3.apk",
+    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.3/raster-dial-0.1.3.apk"
   ]
 }

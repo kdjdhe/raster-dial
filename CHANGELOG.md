@@ -5,7 +5,7 @@
 ### Changed
 
 - Limit the built-in demo to five groups: Yixuan, Pyrois, Miyabi, Vivian, Ye Shunguang (14 images)
-- Attribute the artwork to the official Zenless Zone Zero "绳网情报站" wiki
+- Attribute the artwork to the official miHoYo / 米游社 (Miyoushe) "绳网情报站" wiki
 
 ## [0.1.0] - 2026-11-01
 

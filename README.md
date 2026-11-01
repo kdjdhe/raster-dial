@@ -183,7 +183,7 @@ gradle test             # 本机安装 Gradle 9.7.1 时等价
 ## 素材与许可
 
 - **代码**：MIT，见 [LICENSE](LICENSE)。
-- **内置图片**：`app/src/main/assets/groups/` 与 `app/src/main/assets/groups_land/` 来自米哈游《绝区零》官方「绳网情报站」Wiki（https://baike.mihoyo.com/zzz/wiki/channel/map/2/43），版权归米哈游 / HoYoverse。**不包含在 MIT 许可内**；公开仓库仅作个人演示，不构成再分发或商用授权。App 图标、缩略图与 README 截图同样包含官方素材。若你要再分发或商用，请移除/替换为你有权使用的图片，或先取得授权；详见 [NOTICE](NOTICE)。
+- **内置图片**：`app/src/main/assets/groups/` 与 `app/src/main/assets/groups_land/` 来自米哈游 / 米游社《绝区零》官方「绳网情报站」Wiki（https://baike.mihoyo.com/zzz/wiki/channel/map/2/43），版权归米哈游 / HoYoverse。**不包含在 MIT 许可内**；公开仓库仅作个人演示，不构成再分发或商用授权。App 图标、缩略图与 README 截图同样包含官方素材。若你要再分发或商用，请移除/替换为你有权使用的图片，或先取得授权；详见 [NOTICE](NOTICE)。
 - 重新生成素材：把原图放进 `art` 目录或设置 `RASTER_SRC`，再运行 `tools/build_groups.py` 与 `tools/build_landscape.py`。
 
 ## 已知限制与路线图

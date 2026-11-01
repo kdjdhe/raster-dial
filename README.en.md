@@ -183,7 +183,7 @@ Manual acceptance on a device:
 ## Assets and License
 
 - **Code**: MIT; see [LICENSE](LICENSE).
-- **Bundled images**: `app/src/main/assets/groups/` and `app/src/main/assets/groups_land/` come from miHoYo's official Zenless Zone Zero "绳网情报站" wiki (https://baike.mihoyo.com/zzz/wiki/channel/map/2/43); copyright miHoYo / HoYoverse. They are **not covered by the MIT License**; the public repository is a personal demonstration only and grants no redistribution or commercial rights. The app icon, thumbnail, and README screenshots also contain official artwork. If you redistribute or use the project commercially, remove/replace these images or obtain permission; see [NOTICE](NOTICE).
+- **Bundled images**: `app/src/main/assets/groups/` and `app/src/main/assets/groups_land/` come from the official miHoYo / 米游社 (Miyoushe) Zenless Zone Zero "绳网情报站" wiki (https://baike.mihoyo.com/zzz/wiki/channel/map/2/43); copyright miHoYo / HoYoverse. They are **not covered by the MIT License**; the public repository is a personal demonstration only and grants no redistribution or commercial rights. The app icon, thumbnail, and README screenshots also contain official artwork. If you redistribute or use the project commercially, remove/replace these images or obtain permission; see [NOTICE](NOTICE).
 - Regenerate assets: put the originals in the `art` directory or set `RASTER_SRC`, then run `tools/build_groups.py` and `tools/build_landscape.py`.
 
 ## Known Limitations and Roadmap

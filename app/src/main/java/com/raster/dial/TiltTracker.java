@@ -1,11 +1,13 @@
 package com.raster.dial;
 
 import android.content.Context;
+import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
+import android.view.Display;
 import android.view.Surface;
 
 /**
@@ -44,6 +46,7 @@ public class TiltTracker implements SensorEventListener {
     private boolean invert;
     private boolean accelOnly;
     private int displayRotation = Surface.ROTATION_0;
+    private boolean naturalLandscape;
 
     private float smoothX = 1f, smoothY = 0f;
     private float phase = 0f;
@@ -69,8 +72,22 @@ public class TiltTracker implements SensorEventListener {
         invert = v;
     }
 
-    public void setDisplayRotation(int rotation) {
+    /**
+     * 屏幕旋转与其自然方向。getRotation() 是相对自然方向的：手机自然竖屏，
+     * 多数平板自然横屏（rotation 0 即横屏），传感器轴须按“相对竖屏的角度”补偿。
+     */
+    public void setDisplayRotation(int rotation, boolean naturalLandscape) {
         displayRotation = rotation;
+        this.naturalLandscape = naturalLandscape;
+    }
+
+    /** 由当前旋转与 realSize 反推自然方向是否横屏（平板）；rot 0/180 不改变横竖，90/270 交换。 */
+    public static boolean naturalLandscape(Display d) {
+        int rot = d.getRotation();
+        Point real = new Point();
+        d.getRealSize(real);
+        return (rot == Surface.ROTATION_0 || rot == Surface.ROTATION_180)
+                ? real.x > real.y : real.x < real.y;
     }
 
     /** 半程角度（弧度）：越大越不灵敏。 */
@@ -191,22 +208,26 @@ public class TiltTracker implements SensorEventListener {
     }
 
     private void update(float tx, float ty, long now) {
-        // 传感器自然坐标 -> 当前屏幕坐标（y 向上）
+        // 传感器自然坐标 -> 当前屏幕坐标（y 向上）。
+        // 先把 getRotation() 换算成“相对竖屏的顺时针档位”：自然横屏的平板
+        // 整体偏移一档（rot0 即横屏，等效竖屏坐标系已转 90°）；自然竖屏的
+        // 手机逐位保持原有映射。
+        int idx = naturalLandscape ? (displayRotation + 1) & 3 : displayRotation;
         float sx, sy;
-        switch (displayRotation) {
-            case Surface.ROTATION_90:
+        switch (idx) {
+            case 1: // ROTATION_90
                 sx = ty;
                 sy = -tx;
                 break;
-            case Surface.ROTATION_180:
+            case 2: // ROTATION_180
                 sx = -tx;
                 sy = -ty;
                 break;
-            case Surface.ROTATION_270:
+            case 3: // ROTATION_270
                 sx = -ty;
                 sy = tx;
                 break;
-            default:
+            default: // ROTATION_0
                 sx = tx;
                 sy = ty;
                 break;

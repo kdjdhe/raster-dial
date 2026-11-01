@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -175,7 +176,8 @@ public class LenticularActivity extends Activity {
             boolean land = getResources().getConfiguration().orientation
                     == Configuration.ORIENTATION_LANDSCAPE;
             tracker.setRange(sens * (land ? 1.2f : 1f));
-            tracker.setDisplayRotation(getWindowManager().getDefaultDisplay().getRotation());
+            Display d = getWindowManager().getDefaultDisplay();
+            tracker.setDisplayRotation(d.getRotation(), TiltTracker.naturalLandscape(d));
         }
 
         updateDate();
@@ -210,7 +212,8 @@ public class LenticularActivity extends Activity {
             view.onResume();
         }
         if (!fixed && tracker != null) {
-            tracker.setDisplayRotation(getWindowManager().getDefaultDisplay().getRotation());
+            Display d = getWindowManager().getDefaultDisplay();
+            tracker.setDisplayRotation(d.getRotation(), TiltTracker.naturalLandscape(d));
             boolean land = getResources().getConfiguration().orientation
                     == Configuration.ORIENTATION_LANDSCAPE;
             float sens = getSharedPreferences("lock", MODE_PRIVATE).getFloat("sens", 0.35f);

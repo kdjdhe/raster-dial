@@ -16,6 +16,7 @@ import android.os.SystemClock;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
 import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.WindowManager;
 
@@ -220,7 +221,7 @@ public class LenticularWallpaperService extends WallpaperService {
             int rot = d.getRotation();
             if (rot != lastRotation) {
                 lastRotation = rot;
-                tracker.setDisplayRotation(rot);
+                tracker.setDisplayRotation(rot, TiltTracker.naturalLandscape(d));
             }
 
             String gid = GroupCatalog.currentId(LenticularWallpaperService.this);

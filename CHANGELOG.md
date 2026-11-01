@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.4] - 2026-11-01
+
+### Fixed
+
+- Tablet tilt direction: the sensor-axis mapping assumed a portrait-natural display
+  (`getRotation()` is relative to the natural orientation, which is landscape on most
+  tablets), so directions were 90° off on tablets. The rotation is now converted to a
+  portrait-relative index from the current real size + rotation; phone behavior is
+  unchanged.
+
 ## [0.1.3] - 2026-11-01
 
 ### Added

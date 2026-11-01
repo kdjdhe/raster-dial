@@ -21,15 +21,21 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 自定义光栅组：槽位图片存在 files/custom/，每个槽位有 master（原图）与 display（旋转后）。
- * 支持选图、旋转、上移/下移、删除、添加。
+ * 自定义光栅组：多组，组有名字，每组 0–6 个槽位。
+ * 清单在 files/custom/groups.json；每张图有 master（原图）与 display（旋转后）。
+ * 旧版单组 files/custom/group.json 会自动迁移成 id=custom 的“自定义”组。
  */
 public final class CustomStore {
 
     private static final String TAG = "CUSTOM";
     private static final String DIR = "custom";
-    private static final String MANIFEST = "group.json";
+    private static final String MANIFEST = "groups.json";
+    private static final String LEGACY_MANIFEST = "group.json";
+    private static final String LEGACY_ID = "custom";
+    private static final String DEFAULT_NAME = "自定义";
     private static final int MAX_DIM = 3000;
+
+    public static final int MAX_SLOTS = 6;
 
     public static final class Slot {
         public String master;
@@ -43,6 +49,24 @@ public final class CustomStore {
         }
     }
 
+    public static final class CustomGroup {
+        public final String id;
+        public String name;
+        public final List<Slot> slots;
+
+        CustomGroup(String id, String name, List<Slot> slots) {
+            this.id = id;
+            this.name = name;
+            this.slots = slots;
+        }
+
+        public int count() {
+            return slots.size();
+        }
+    }
+
+    private static List<CustomGroup> cache;
+
     private CustomStore() {
     }
 
@@ -55,59 +79,118 @@ public final class CustomStore {
         return d;
     }
 
-    public static synchronized List<Slot> load(Context c) {
-        File f = new File(dir(c), MANIFEST);
-        if (!f.exists()) {
-            seed(c);
+    /** 读取全部自定义组；首次运行 seed 一个“自定义”，旧单组自动迁移。 */
+    public static synchronized List<CustomGroup> loadGroups(Context c) {
+        if (cache != null) {
+            return cache;
         }
-        List<Slot> list = new ArrayList<>();
-        try {
-            JSONObject root = new JSONObject(readFile(f));
-            JSONArray arr = root.getJSONArray("slots");
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject o = arr.getJSONObject(i);
-                list.add(new Slot(o.getString("m"), o.getString("d"),
-                        o.optInt("r", 0)));
+        List<CustomGroup> groups = new ArrayList<>();
+        File manifest = new File(dir(c), MANIFEST);
+        boolean needWrite = false;
+        if (manifest.isFile()) {
+            groups.addAll(readGroups(manifest));
+        } else {
+            File legacy = new File(dir(c), LEGACY_MANIFEST);
+            if (legacy.isFile()) {
+                List<Slot> slots = readSlots(legacy);
+                if (!slots.isEmpty()) {
+                    groups.add(new CustomGroup(LEGACY_ID, DEFAULT_NAME, slots));
+                }
             }
-        } catch (Exception e) {
-            Log.e(TAG, "load manifest failed", e);
-        }
-        return list;
-    }
-
-    public static synchronized void save(Context c, List<Slot> slots) {
-        try {
-            JSONArray arr = new JSONArray();
-            for (Slot s : slots) {
-                JSONObject o = new JSONObject();
-                o.put("m", s.master);
-                o.put("d", s.display);
-                o.put("r", s.rotation);
-                arr.put(o);
+            if (groups.isEmpty()) {
+                seed(c, groups);
             }
-            JSONObject root = new JSONObject();
-            root.put("slots", arr);
-            writeFile(new File(dir(c), MANIFEST), root.toString());
-            bumpVersion(c);
-        } catch (Exception e) {
-            Log.e(TAG, "save manifest failed", e);
+            needWrite = true;
         }
+        cache = groups;
+        if (needWrite) {
+            writeGroups(c, groups);
+        }
+        return groups;
     }
 
-    public static int count(Context c) {
-        return load(c).size();
+    public static synchronized CustomGroup find(Context c, String id) {
+        if (id == null) {
+            return null;
+        }
+        for (CustomGroup g : loadGroups(c)) {
+            if (g.id.equals(id)) {
+                return g;
+            }
+        }
+        return null;
     }
 
-    public static synchronized Bitmap[] loadBitmaps(Context c) {
-        List<Slot> slots = load(c);
+    /** 新建一个空组；名称不能为空或与已有自定义组重名。 */
+    public static synchronized CustomGroup create(Context c, String name) {
+        List<CustomGroup> groups = loadGroups(c);
+        String n = name == null ? "" : name.trim();
+        if (n.isEmpty() || nameTaken(groups, n, null)) {
+            return null;
+        }
+        CustomGroup g = new CustomGroup(newId(), n, new ArrayList<>());
+        groups.add(g);
+        saveGroups(c);
+        return g;
+    }
+
+    /** 保存名称/槽位；名称不能为空或与其它自定义组重名。 */
+    public static synchronized boolean saveGroup(Context c, CustomGroup g) {
+        List<CustomGroup> groups = loadGroups(c);
+        String n = g.name == null ? "" : g.name.trim();
+        if (n.isEmpty() || nameTaken(groups, n, g.id)) {
+            return false;
+        }
+        g.name = n;
+        if (!groups.contains(g)) {
+            groups.add(g);
+        }
+        saveGroups(c);
+        return true;
+    }
+
+    public static synchronized boolean deleteGroup(Context c, String id) {
+        List<CustomGroup> groups = loadGroups(c);
+        for (int i = 0; i < groups.size(); i++) {
+            CustomGroup g = groups.get(i);
+            if (!g.id.equals(id)) {
+                continue;
+            }
+            for (Slot s : g.slots) {
+                deleteFiles(c, s);
+            }
+            groups.remove(i);
+            saveGroups(c);
+            return true;
+        }
+        return false;
+    }
+
+    public static synchronized Bitmap[] loadBitmaps(Context c, String groupId) {
+        CustomGroup g = find(c, groupId);
+        if (g == null) {
+            return new Bitmap[0];
+        }
         List<Bitmap> out = new ArrayList<>();
-        for (Slot s : slots) {
+        for (Slot s : g.slots) {
             Bitmap bm = BitmapFactory.decodeFile(new File(dir(c), s.display).getAbsolutePath());
             if (bm != null) {
                 out.add(bm);
             }
         }
         return out.toArray(new Bitmap[0]);
+    }
+
+    public static File firstDisplay(Context c, String groupId) {
+        CustomGroup g = find(c, groupId);
+        if (g == null || g.slots.isEmpty()) {
+            return null;
+        }
+        return new File(dir(c), g.slots.get(0).display);
+    }
+
+    public static synchronized void saveGroupSlots(Context c, CustomGroup g) {
+        saveGroups(c);
     }
 
     /** 选图：解码 -> 按 EXIF 摆正 -> 存 master -> 按 rotation 生成 display。 */
@@ -199,7 +282,108 @@ public final class CustomStore {
         sp.edit().putLong("custom_version", sp.getLong("custom_version", 0) + 1).apply();
     }
 
-    private static void seed(Context c) {
+    private static boolean nameTaken(List<CustomGroup> groups, String name, String exceptId) {
+        for (CustomGroup g : groups) {
+            if (g.id.equals(exceptId)) {
+                continue;
+            }
+            if (g.name.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String newId() {
+        return "c_" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+    }
+
+    private static void saveGroups(Context c) {
+        if (cache != null) {
+            writeGroups(c, cache);
+        }
+    }
+
+    private static void writeGroups(Context c, List<CustomGroup> groups) {
+        try {
+            JSONArray arr = new JSONArray();
+            for (CustomGroup g : groups) {
+                JSONObject o = new JSONObject();
+                o.put("id", g.id);
+                o.put("name", g.name);
+                JSONArray slots = new JSONArray();
+                for (Slot s : g.slots) {
+                    JSONObject so = new JSONObject();
+                    so.put("m", s.master);
+                    so.put("d", s.display);
+                    so.put("r", s.rotation);
+                    slots.put(so);
+                }
+                o.put("slots", slots);
+                arr.put(o);
+            }
+            JSONObject root = new JSONObject();
+            root.put("groups", arr);
+            writeFile(new File(dir(c), MANIFEST), root.toString());
+            bumpVersion(c);
+        } catch (Exception e) {
+            Log.e(TAG, "save manifest failed", e);
+        }
+    }
+
+    private static List<CustomGroup> readGroups(File f) {
+        List<CustomGroup> out = new ArrayList<>();
+        try {
+            JSONObject root = new JSONObject(readFile(f));
+            JSONArray arr = root.optJSONArray("groups");
+            if (arr == null) {
+                return out;
+            }
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                String id = o.optString("id", "");
+                String name = o.optString("name", DEFAULT_NAME);
+                if (id.isEmpty()) {
+                    continue;
+                }
+                out.add(new CustomGroup(id, name, readSlots(o)));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "read manifest failed", e);
+        }
+        return out;
+    }
+
+    private static List<Slot> readSlots(File f) {
+        try {
+            return readSlots(new JSONObject(readFile(f)));
+        } catch (Exception e) {
+            Log.e(TAG, "read legacy manifest failed", e);
+            return new ArrayList<>();
+        }
+    }
+
+    private static List<Slot> readSlots(JSONObject root) {
+        List<Slot> list = new ArrayList<>();
+        JSONArray arr = root.optJSONArray("slots");
+        if (arr == null) {
+            return list;
+        }
+        for (int i = 0; i < arr.length(); i++) {
+            try {
+                JSONObject o = arr.getJSONObject(i);
+                String m = o.optString("m", "");
+                String d = o.optString("d", "");
+                if (!m.isEmpty() && !d.isEmpty()) {
+                    list.add(new Slot(m, d, o.optInt("r", 0)));
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return list;
+    }
+
+    private static void seed(Context c, List<CustomGroup> groups) {
         try {
             File dir = dir(c);
             List<Slot> slots = new ArrayList<>();
@@ -212,7 +396,7 @@ public final class CustomStore {
                 copyFile(master, display);
                 slots.add(new Slot(master.getName(), display.getName(), 0));
             }
-            save(c, slots);
+            groups.add(new CustomGroup(LEGACY_ID, DEFAULT_NAME, slots));
             Log.i(TAG, "seeded " + slots.size() + " slots");
         } catch (Exception e) {
             Log.e(TAG, "seed failed", e);

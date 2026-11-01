@@ -32,6 +32,11 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".GroupPickerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <receiver
             android:name=".WallDebugReceiver"
             android:exported="true">

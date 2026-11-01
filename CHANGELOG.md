@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.3] - 2026-11-01
+
+### Added
+
+- Multiple custom groups: create, name/rename, delete; 0–6 slots per group, at least 1 to select
+- Group picker with thumbnail cards, current marker, built-in/custom badges, and edit/new actions
+- One-time migration of the old single custom group to a group named 自定义
+- Release signing configuration (`keystore.properties`, `keystore.properties.example`, `docs/SIGNING.md`)
+- `tools/publish_update.py --asset-name` for release-signed APK filenames
+
+### Changed
+
+- Main screen group card opens the picker; the spinner is removed
+- versionCode 4 / versionName 0.1.3
+
 ## [0.1.2] - 2026-11-01
 
 ### Added

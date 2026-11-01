@@ -14,14 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 内置组来自 assets/groups，自定义组来自 files/custom。
- * 组内图片：1 = 色彩最丰富；组名带绝区零中文名。
+ * 内置组来自 assets/groups，自定义组来自 files/custom/groups.json。
+ * 组内图片：1 = 色彩最丰富；内置组名带绝区零中文名，自定义组名由用户命名。
  */
 public final class GroupCatalog {
 
     private static final String TAG = "GROUPS";
     public static final String DEFAULT_ID = "Pyrois";
-    public static final String CUSTOM_ID = "custom";
     public static final String PREF_GROUP = "group";
 
     public static final class Group {
@@ -39,7 +38,7 @@ public final class GroupCatalog {
             this.custom = custom;
         }
 
-        /** 例如：星见雅 · Miyabi；自定义组只显示“自定义”。 */
+        /** 内置组显示“星见雅 · Miyabi”；自定义组显示用户命名。 */
         public String displayName() {
             return nameZh.equals(name) ? name : nameZh + " · " + name;
         }
@@ -83,18 +82,17 @@ public final class GroupCatalog {
         return list;
     }
 
-    /** 内置组 + 自定义组（自定义组数量动态读取）。 */
+    /** 内置组 + 所有自定义组。 */
     public static List<Group> load(Context c) {
         List<Group> list = new ArrayList<>(builtins(c));
-        list.add(new Group(CUSTOM_ID, "Custom", "自定义", CustomStore.count(c), true));
+        for (CustomStore.CustomGroup g : CustomStore.loadGroups(c)) {
+            list.add(new Group(g.id, g.name, g.name, g.slots.size(), true));
+        }
         return list;
     }
 
     public static Group find(Context c, String id) {
-        if (CUSTOM_ID.equals(id)) {
-            return new Group(CUSTOM_ID, "Custom", "自定义", CustomStore.count(c), true);
-        }
-        List<Group> all = builtins(c);
+        List<Group> all = load(c);
         for (Group g : all) {
             if (g.id.equals(id)) {
                 return g;
@@ -105,17 +103,15 @@ public final class GroupCatalog {
                 return g;
             }
         }
-        return all.get(0);
+        return all.isEmpty() ? null : all.get(0);
     }
 
+    /** 校验当前组；删除/清空自定义组后回退到默认组。 */
     public static String currentId(Context c) {
         SharedPreferences sp = c.getSharedPreferences("lock", Context.MODE_PRIVATE);
         String id = sp.getString(PREF_GROUP, DEFAULT_ID);
-        if (CUSTOM_ID.equals(id)) {
-            return id;
-        }
-        for (Group g : builtins(c)) {
-            if (g.id.equals(id)) {
+        for (Group g : load(c)) {
+            if (g.id.equals(id) && g.count > 0) {
                 return id;
             }
         }

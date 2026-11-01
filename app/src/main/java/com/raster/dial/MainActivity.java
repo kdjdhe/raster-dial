@@ -7,27 +7,25 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.List;
 
 public class MainActivity extends Activity {
 
-    private Spinner spinner;
-    private List<GroupCatalog.Group> groups;
+    private ImageView groupThumb;
+    private TextView groupName;
+    private TextView groupMeta;
+    private TextView groupEdit;
     private final TextView[] sensChips = new TextView[3];
 
     private static final float[] SENS = {0.24f, 0.35f, 0.52f};
@@ -78,63 +76,43 @@ public class MainActivity extends Activity {
         LinearLayout groupCard = Ui.card(this);
         groupCard.addView(Ui.text(this, "光栅组", 12, Ui.MUTED, true));
 
-        groups = GroupCatalog.load(this);
-        ArrayAdapter<GroupCatalog.Group> adapter =
-                new ArrayAdapter<GroupCatalog.Group>(this,
-                        android.R.layout.simple_spinner_item, groups) {
-                    @Override
-                    public View getView(int position, View convertView, ViewGroup parent) {
-                        TextView tv = (TextView) super.getView(position, convertView, parent);
-                        tv.setTextColor(Ui.TEXT);
-                        tv.setTextSize(16);
-                        tv.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-                        tv.setPadding(Ui.dp(MainActivity.this, 4), 0,
-                                Ui.dp(MainActivity.this, 4), 0);
-                        return tv;
-                    }
+        LinearLayout groupRow = new LinearLayout(this);
+        groupRow.setOrientation(LinearLayout.HORIZONTAL);
+        groupRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        groupRow.setPadding(0, Ui.dp(this, 8), 0, 0);
 
-                    @Override
-                    public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                        TextView tv = (TextView) super.getDropDownView(position, convertView, parent);
-                        tv.setTextColor(Ui.TEXT);
-                        tv.setTextSize(15);
-                        tv.setPadding(Ui.dp(MainActivity.this, 16), Ui.dp(MainActivity.this, 12),
-                                Ui.dp(MainActivity.this, 16), Ui.dp(MainActivity.this, 12));
-                        return tv;
-                    }
-                };
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner = new Spinner(this);
-        spinner.setAdapter(adapter);
-        spinner.setBackground(Ui.round(this, Ui.SURFACE2, 12));
-        spinner.setPadding(Ui.dp(this, 12), Ui.dp(this, 4),
-                Ui.dp(this, 12), Ui.dp(this, 4));
-        spinner.setPopupBackgroundDrawable(Ui.round(this, Ui.SURFACE2, 12));
-        selectCurrentGroup();
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                GroupCatalog.setCurrentId(MainActivity.this, groups.get(position).id);
-            }
+        groupThumb = new ImageView(this);
+        int ts = Ui.dp(this, 64);
+        groupThumb.setLayoutParams(new LinearLayout.LayoutParams(ts, ts));
+        groupThumb.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        groupThumb.setBackground(Ui.round(this, Ui.SURFACE2, 14));
+        groupThumb.setClipToOutline(true);
+        groupRow.addView(groupThumb);
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-
-        LinearLayout spinnerRow = new LinearLayout(this);
-        spinnerRow.setOrientation(LinearLayout.HORIZONTAL);
-        spinnerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        spinnerRow.addView(spinner, new LinearLayout.LayoutParams(
+        LinearLayout groupInfo = new LinearLayout(this);
+        groupInfo.setOrientation(LinearLayout.VERTICAL);
+        groupInfo.setPadding(Ui.dp(this, 12), 0, 0, 0);
+        groupName = Ui.text(this, "", 18, Ui.TEXT, true);
+        groupMeta = Ui.text(this, "", 12, Ui.MUTED, false);
+        groupMeta.setPadding(0, Ui.dp(this, 3), 0, 0);
+        groupInfo.addView(groupName);
+        groupInfo.addView(groupMeta);
+        groupRow.addView(groupInfo, new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        TextView arrow = Ui.text(this, "▾", 16, Ui.MUTED, false);
-        arrow.setPadding(Ui.dp(this, 8), 0, Ui.dp(this, 8), 0);
-        spinnerRow.addView(arrow);
-        Ui.addWithTop(groupCard, spinnerRow, this, 8);
 
-        TextView edit = Ui.button(this, "编辑自定义光栅组", false);
-        edit.setOnClickListener(v -> startActivity(new Intent(this, GroupEditorActivity.class)));
-        Ui.addWithTop(groupCard, edit, this, 10);
+        TextView pick = Ui.chip(this, "选择", false);
+        pick.setOnClickListener(v -> openPicker());
+        groupRow.addView(pick);
+
+        groupEdit = Ui.chip(this, "编辑", false);
+        groupEdit.setVisibility(View.GONE);
+        groupEdit.setOnClickListener(v -> openEditor(GroupCatalog.currentId(this)));
+        groupRow.addView(groupEdit);
+        groupCard.addView(groupRow);
+
+        TextView manage = Ui.button(this, "管理自定义光栅组", false);
+        manage.setOnClickListener(v -> openPicker());
+        Ui.addWithTop(groupCard, manage, this, 10);
         Ui.addWithTop(root, groupCard, this, 18);
 
         // ---------- effect card ----------
@@ -251,14 +229,26 @@ public class MainActivity extends Activity {
         row.addView(chip, lp);
     }
 
-    private void selectCurrentGroup() {
-        String cur = GroupCatalog.currentId(this);
-        for (int i = 0; i < groups.size(); i++) {
-            if (groups.get(i).id.equals(cur)) {
-                spinner.setSelection(i);
-                break;
-            }
+    private void updateGroupCard() {
+        GroupCatalog.Group g = GroupCatalog.find(this, GroupCatalog.currentId(this));
+        if (g == null) {
+            return;
         }
+        groupName.setText(g.displayName());
+        groupMeta.setText((g.custom ? "自定义" : "内置") + " · " + g.count + " 张");
+        Bitmap thumb = GroupImages.loadThumb(this, g, 320);
+        groupThumb.setImageBitmap(thumb);
+        groupEdit.setVisibility(g.custom ? View.VISIBLE : View.GONE);
+    }
+
+    private void openPicker() {
+        startActivity(new Intent(this, GroupPickerActivity.class));
+    }
+
+    private void openEditor(String id) {
+        Intent i = new Intent(this, GroupEditorActivity.class);
+        i.putExtra(GroupEditorActivity.EXTRA_GROUP_ID, id);
+        startActivity(i);
     }
 
     private int sensIndex() {
@@ -335,9 +325,7 @@ public class MainActivity extends Activity {
         super.onResume();
         UpdateChecker.autoCheck(this);
         UpdateChecker.resumePendingInstall(this);
-        if (spinner != null && groups != null) {
-            selectCurrentGroup();
-        }
+        updateGroupCard();
         for (int k = 0; k < SENS.length; k++) {
             boolean sel = k == sensIndex();
             sensChips[k].setTextColor(sel ? Ui.ON_ACCENT : Ui.TEXT);

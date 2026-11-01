@@ -223,7 +223,7 @@ public class LenticularWallpaperService extends WallpaperService {
                 tracker.setDisplayRotation(rot);
             }
 
-            String gid = sp.getString(GroupCatalog.PREF_GROUP, GroupCatalog.DEFAULT_ID);
+            String gid = GroupCatalog.currentId(LenticularWallpaperService.this);
             if (loadedId == null || !gid.equals(loadedId)) {
                 loadGroup(GroupCatalog.find(LenticularWallpaperService.this, gid));
             }
@@ -232,7 +232,11 @@ public class LenticularWallpaperService extends WallpaperService {
             if (cv != lastCustomVersion) {
                 lastCustomVersion = cv;
                 if (group != null && group.custom) {
-                    loadGroup(group);
+                    GroupCatalog.Group g = GroupCatalog.find(
+                            LenticularWallpaperService.this, group.id);
+                    if (g != null) {
+                        loadGroup(g);
+                    }
                 }
             }
         }

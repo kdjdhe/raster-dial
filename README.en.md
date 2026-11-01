@@ -5,11 +5,10 @@
 
 # Raster Dial
 
-A lenticular live wallpaper for Android 9+: tilt the phone and the image transitions between 2–3 layers along a single soft gradient boundary. 5 built-in demo groups, custom slots, tablet/landscape support, and debouncing.
+A lenticular live wallpaper for Android 9+: tilt the phone and the image transitions between 2–3 layers along a single soft gradient boundary. 5 built-in demo groups, multiple named custom groups, tablet/landscape support, and debouncing.
 
 <p align="center">
   <img src="docs/screenshots/home.webp" width="260" alt="Raster Dial wallpaper on the home screen">
-  <img src="docs/screenshots/editor.png" width="260" alt="Custom group editor">
 </p>
 
 ## Features
@@ -19,7 +18,7 @@ A lenticular live wallpaper for Android 9+: tilt the phone and the image transit
 - **Cycling**: `phase` is unbounded; 2–3 images cycle as `1→2→3→1`.
 - **Debouncing**: One Euro Filter + soft dead zone + direction dead zone + a 3 cycles/s phase limit; the half-range angle is multiplied by 1.2 on tablets/landscape.
 - **5 built-in demo groups + custom**: Yixuan, Pyrois, Miyabi, Vivian, Ye Shunguang.
-- **Custom groups**: 1–6 slots with pick, rotate 90°, reorder, and delete.
+- **Multiple custom groups**: create, name/rename, delete; 1–6 images per group with pick, rotate 90°, reorder, and delete.
 - **Tablets/foldables**: the runtime surface aspect ratio selects portrait/landscape assets; aspect-fill cropping; display-rotation compensation.
 - **Wallpaper only**: no lock-screen takeover, no flashing, no boot service.
 - **In-app updates**: Chengdu primary + GitHub fallback; SHA-256 verification; system installer.
@@ -78,7 +77,7 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 
 | Path | Purpose |
 |---|---|
-| `app/src/main/java/com/raster/dial/` | Java sources: wallpaper service, GL preview, sensors/debouncing, group catalog, custom slots |
+| `app/src/main/java/com/raster/dial/` | Java sources: wallpaper service, GL preview, sensors/debouncing, group picker, custom groups |
 | `app/src/main/AndroidManifest.xml` | App, preview, wallpaper service, and debug receiver declarations |
 | `app/src/main/assets/groups/` | Portrait assets 1080×2400 (5 groups; source images rotated 90°) |
 | `app/src/main/assets/groups_land/` | Landscape assets 1920×1080 (source images unrotated) |
@@ -99,11 +98,12 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 
 | Control | Purpose |
 |---|---|
-| Group | 5 built-in demo groups + custom; shown as "Chinese name · English" |
+| Group | 5 built-in demo groups + multiple custom groups; picker cards; "Chinese name · English" or the custom name |
 | Sensitivity | High 14° / medium 20° / low 30° (half-range angle) |
 | Wallpaper debug line | Bottom-left: group, portrait/landscape, rotation, `phase`, segment, segment progress, direction, frame time |
 | Invert sweep | Swap the side the gradient sweeps from |
-| Edit custom group | 1–6 slots; pick / rotate / reorder / delete |
+| Select group | Opens the picker; tap a card; custom cards can be edited / named / deleted |
+| Manage custom groups | Create groups; 1–6 images each; pick / rotate / reorder / delete |
 | Set as live wallpaper | Opens the system live-wallpaper picker |
 | Clear wallpaper | Restores the system default static wallpaper |
 | Check for updates | Reads the Chengdu primary + GitHub fallback; downloads and verifies SHA-256 |
@@ -180,16 +180,17 @@ Manual acceptance on a device:
 3. Keep tilting; confirm the `1→2→3→1` cycle.
 4. Hold still for 30 seconds; confirm there is no visible jitter.
 5. Rotate to landscape or force a tablet size; confirm landscape assets and direction.
-6. In a custom group, pick, rotate, reorder, and delete.
+6. Create multiple custom groups; name/rename, pick, rotate, reorder, delete, and switch.
 7. Switch groups; confirm the wallpaper updates within about 0.5 seconds.
 
 ## Custom Groups
 
-- Two slots are seeded from Pyrois on first run;
-- Each slot supports pick (system file picker), rotate 90°, move up/down, and delete;
-- 1–6 slots; slots cycle `1→2→3→1`;
-- "Use this group" switches the wallpaper to the custom group;
-- Files live in the app's private `files` directory under `custom`: `group.json` plus each slot's `m_*.webp` (master) and `s_*.webp` (rotated display);
+- Multiple custom groups, each with a user name; create, rename, delete;
+- Picker cards with thumbnails, a current marker, and built-in/custom badges; tap to switch; custom cards have "Edit";
+- Editor: name field + save; 1–6 images per group (a new group may start empty; at least 1 to "Use this group");
+- Each slot: pick (system file picker), rotate 90°, move up/down, delete;
+- The old single custom group migrates to a group named 自定义; a fresh install seeds one "自定义" group with 2 Pyrois images;
+- Files live in the app's private `files` directory under `custom`: `groups.json` plus each image's `m_*.webp` (master) and `s_*.webp` (rotated display);
 - Imports are EXIF-corrected; the master's longest edge is 3000 px and the display's longest edge is 1600 px.
 
 ## Update Source

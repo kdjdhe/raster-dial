@@ -90,6 +90,8 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 | `tools/sync_chengdu.sh` | Uploads `update.json` + APK to the Chengdu server |
 | `update.json` | App update manifest (versionCode, SHA-256, Chengdu/GitHub mirrors) |
 | `docs/UPDATE_SOURCE.md` | Chengdu + GitHub update source deployment and release guide |
+| `docs/SIGNING.md` | debug/release signing, keystore, and update migration |
+| `keystore.properties.example` | Release signing example (the real file is gitignored) |
 | `docs/COMPATIBILITY.md` | Compatibility analysis for other Android devices and tablets |
 | `docs/screenshots/` | README screenshots |
 
@@ -144,6 +146,7 @@ The same code covers 20:9 phones, 19.5:9, 21:9, 16:10 tablets, and folded/unfold
 ./gradlew assembleDebug          # build the debug APK
 ./gradlew test                   # unit-test task (no test sources currently)
 ./gradlew lint                   # Android Lint
+./gradlew assembleRelease        # needs keystore.properties; outputs app-release.apk
 python tools/build_groups.py     # rebuild portrait assets + groups.json
 python tools/build_landscape.py  # rebuild landscape assets
 python tools/publish_update.py --chengdu-base https://updates.example.com/raster-dial
@@ -197,7 +200,7 @@ The app checks for updates with a Chengdu primary and a GitHub fallback:
 2. If newer, download the `apkUrls` in order and verify SHA-256.
 3. On success, open the system installer (allow "install unknown apps" once).
 
-The repo's `update.json` is the GitHub fallback; the APK points at the Release asset. The Chengdu server only hosts a static copy of the JSON + APK. Deployment, Caddy/Nginx/Cloudflare Tunnel, signing, and release steps are in [docs/UPDATE_SOURCE.md](docs/UPDATE_SOURCE.md).
+The repo's `update.json` is the GitHub fallback; the APK points at the Release asset. The Chengdu server only hosts a static copy of the JSON + APK. Deployment, Caddy/Nginx/Cloudflare Tunnel, signing, and release steps are in [docs/UPDATE_SOURCE.md](docs/UPDATE_SOURCE.md); keystore and debug→release migration are in [docs/SIGNING.md](docs/SIGNING.md).
 
 The current primary in `BuildConfig` is the placeholder `https://updates.example.com/raster-dial/update.json`; rebuild after replacing it with your Chengdu domain. The GitHub fallback works now.
 
@@ -230,7 +233,7 @@ Pattern: HyperOS / OriginOS integrate live wallpapers into the keyguard and expo
 - Memory headroom: downscale for the target screen, RGB_565, and a 1600 px display edge for custom images.
 - A real tablet/foldable smoke test is on the roadmap.
 - The official artwork carries the IP risk described above.
-- The update APK must be signed with the same key as the installed app; current builds are debug-signed, and the Chengdu server must mirror the exact APK.
+- The update APK must be signed with the same key as the installed app; current builds are debug-signed, and the Chengdu server must mirror the exact APK. Signing steps: [docs/SIGNING.md](docs/SIGNING.md).
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 

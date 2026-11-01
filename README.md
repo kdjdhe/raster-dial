@@ -90,6 +90,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | `tools/sync_chengdu.sh` | 上传 `update.json` + APK 到成都服务器 |
 | `update.json` | App 更新清单（versionCode、SHA-256、成都/GitHub 镜像） |
 | `docs/UPDATE_SOURCE.md` | 成都服务器 + GitHub 更新源部署与发布流程 |
+| `docs/SIGNING.md` | debug/release 签名、keystore、更新源迁移 |
+| `keystore.properties.example` | release 签名配置示例（真实文件被 gitignore） |
 | `docs/COMPATIBILITY.md` | 其他 Android 设备与平板的兼容性分析 |
 | `docs/screenshots/` | README 截图 |
 
@@ -144,6 +146,7 @@ adb shell am broadcast -n com.raster.dial/.WallDebugReceiver \
 ./gradlew assembleDebug          # 构建 debug APK
 ./gradlew test                   # 单元测试任务（当前没有测试源）
 ./gradlew lint                   # Android Lint
+./gradlew assembleRelease        # 需要 keystore.properties；输出 app-release.apk
 python tools/build_groups.py     # 重新生成竖屏素材 + groups.json
 python tools/build_landscape.py  # 重新生成横屏素材
 python tools/publish_update.py --chengdu-base https://updates.example.com/raster-dial
@@ -197,7 +200,7 @@ App 的更新检查是「成都主源 + GitHub 回退」：
 2. 有新版时按 `apkUrls` 顺序下载，校验 SHA-256；
 3. 校验通过后打开系统安装器（需要允许“安装未知应用”）。
 
-仓库根目录的 `update.json` 是 GitHub 回退源，APK 指向 Release 资产；成都服务器只需静态托管同一份 JSON + APK。部署、Caddy/Nginx/Cloudflare Tunnel、签名和发布步骤见 [docs/UPDATE_SOURCE.md](docs/UPDATE_SOURCE.md)。
+仓库根目录的 `update.json` 是 GitHub 回退源，APK 指向 Release 资产；成都服务器只需静态托管同一份 JSON + APK。部署、Caddy/Nginx/Cloudflare Tunnel、签名和发布步骤见 [docs/UPDATE_SOURCE.md](docs/UPDATE_SOURCE.md)；keystore、debug→release 迁移见 [docs/SIGNING.md](docs/SIGNING.md)。
 
 当前 `BuildConfig` 的主源是占位 `https://updates.example.com/raster-dial/update.json`；换成你的成都域名后重新构建。GitHub 回退现在就能用。
 
@@ -230,7 +233,7 @@ App 的更新检查是「成都主源 + GitHub 回退」：
 - 内存优化空间：按屏幕尺寸降采样、RGB_565，以及自定义图 display 最长边 1600px。
 - 真实平板/折叠屏的冒烟测试在路线图中。
 - 内置官方素材的版权风险见上。
-- 更新 APK 必须与已安装 App 使用同一签名；当前是 debug 签名，成都服务器必须镜像同一份 APK，不能在服务器上重新构建。
+- 更新 APK 必须与已安装 App 使用同一签名；当前是 debug 签名，成都服务器必须镜像同一份 APK，不能在服务器上重新构建。签名步骤见 [docs/SIGNING.md](docs/SIGNING.md)。
 
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 

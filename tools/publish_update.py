@@ -51,6 +51,8 @@ def main():
     parser.add_argument("--apk", default=str(ROOT / "app/build/outputs/apk/debug/app-debug.apk"))
     parser.add_argument("--chengdu-base", default="https://updates.example.com/raster-dial",
                         help="Chengdu base URL; the APK filename is appended")
+    parser.add_argument("--asset-name", default="",
+                        help="Release/Chengdu APK filename; defaults to raster-dial-<version>-debug.apk")
     parser.add_argument("--github-url", default="",
                         help="GitHub release asset URL; defaults to the v<version> release asset")
     parser.add_argument("--notes", default="")
@@ -72,7 +74,7 @@ def main():
     min_sdk = int(match_sdk.group(1)) if match_sdk else 0
 
     data = apk.read_bytes()
-    filename = "raster-dial-%s-debug.apk" % version_name
+    filename = args.asset_name.strip() or ("raster-dial-%s-debug.apk" % version_name)
     github = args.github_url.strip() or (
         "https://github.com/kdjdhe/raster-dial/releases/download/v%s/%s"
         % (version_name, filename))

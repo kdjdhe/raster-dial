@@ -156,11 +156,15 @@ tools/sync_chengdu.sh work/raster-dial-0.1.2-debug.apk
 ## 6. 发布一个新版本
 
 1. 改 `app/build.gradle.kts` 的 `versionCode` / `versionName`。
-2. 构建：
+2. 构建（个人调试 `assembleDebug`；正式签名的更新包用 `assembleRelease`）：
 
    ```bash
    ./gradlew assembleDebug
+   # 或：./gradlew assembleRelease
    ```
+
+   > release 签名包：把 `app/build/outputs/apk/release/app-release.apk` 复制成
+   > `work/raster-dial-0.1.3.apk`，再上传。
 
 3. 创建 GitHub Release 并上传 APK：
 
@@ -177,6 +181,8 @@ tools/sync_chengdu.sh work/raster-dial-0.1.2-debug.apk
      --notes "0.1.3: ..."
    ```
 
+   > release 签名包：加 `--apk work/raster-dial-0.1.3.apk --asset-name raster-dial-0.1.3.apk`。
+
 5. 提交并推送 `update.json`（GitHub 回退源）：
 
    ```bash
@@ -187,6 +193,7 @@ tools/sync_chengdu.sh work/raster-dial-0.1.2-debug.apk
 
    ```bash
    CHENGDU_HOST=user@your-chengdu-host tools/sync_chengdu.sh work/raster-dial-0.1.3-debug.apk
+   # release 签名包：... tools/sync_chengdu.sh work/raster-dial-0.1.3.apk
    ```
 
 7. 验证：
@@ -200,6 +207,8 @@ tools/sync_chengdu.sh work/raster-dial-0.1.2-debug.apk
 8. 手机 App 里点“检查更新”，或等 24 小时自动检查。
 
 ## 7. 签名（必读）
+
+完整步骤、keystore 生成、debug→release 迁移见 [SIGNING.md](SIGNING.md)。
 
 - Android 只允许同包名、同签名证书的 APK 覆盖安装。
 - 当前 Release/APK 是 **debug 签名**（`~/.android/debug.keystore`）。

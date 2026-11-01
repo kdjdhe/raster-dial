@@ -1,7 +1,7 @@
 [versions]
 android-compileSdk = "36"
-android-targetSdk = "29"
-android-minSdk = "29"
+android-targetSdk = "34"
+android-minSdk = "28"
 
 agp = "9.2.1"
 annotation = "1.9.1"

@@ -3,6 +3,8 @@
 
 # Raster Dial
 
+**简体中文** | [English](README.en.md)
+
 Android 9+ 的光栅动态壁纸：倾斜手机，画面在 2–3 张图之间沿一条软渐变边界切换；内置 14 组角色、自定义槽位、平板横竖屏与消抖。
 
 <p align="center">

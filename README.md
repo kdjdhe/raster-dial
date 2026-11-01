@@ -182,7 +182,7 @@ gradle test             # 本机安装 Gradle 9.7.1 时等价
 ## 素材与许可
 
 - **代码**：MIT，见 [LICENSE](LICENSE)。
-- **内置图片**：`app/src/main/assets/groups/` 与 `app/src/main/assets/groups_land/` 是《绝区零》同人图，来自本地素材库；**不包含在 MIT 许可内**，仅作为个人项目演示。App 图标、缩略图与 README 截图同样属于同人图。角色/美术版权归米哈游 / HoYoverse 所有。若你要再分发或商用，请替换为你自己的图片；详见 [NOTICE](NOTICE)。
+- **内置图片**：`app/src/main/assets/groups/` 与 `app/src/main/assets/groups_land/` 来自米哈游《绝区零》官方「绳网情报站」Wiki（https://baike.mihoyo.com/zzz/wiki/channel/map/2/43），版权归米哈游 / HoYoverse。**不包含在 MIT 许可内**；公开仓库仅作个人演示，不构成再分发或商用授权。App 图标、缩略图与 README 截图同样包含官方素材。若你要再分发或商用，请移除/替换为你有权使用的图片，或先取得授权；详见 [NOTICE](NOTICE)。
 - 重新生成素材：把原图放进 `art` 目录或设置 `RASTER_SRC`，再运行 `tools/build_groups.py` 与 `tools/build_landscape.py`。
 
 ## 已知限制与路线图
@@ -192,7 +192,7 @@ gradle test             # 本机安装 Gradle 9.7.1 时等价
 - 当前可见时按 16ms 连续重绘；计划改为事件驱动 + 脏检查，静止时接近 0 重绘。
 - 内存优化空间：按屏幕尺寸降采样、RGB_565，以及自定义图 display 最长边 1600px。
 - 真实平板/折叠屏的冒烟测试在路线图中。
-- 内置同人素材的版权风险见上。
+- 内置官方素材的版权风险见上。
 
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
@@ -208,4 +208,4 @@ gradle test             # 本机安装 Gradle 9.7.1 时等价
 
 ## 许可证
 
-MIT License，见 [LICENSE](LICENSE)。内置同人图片不在 MIT 许可范围内，见 [NOTICE](NOTICE)。
+MIT License，见 [LICENSE](LICENSE)。内置官方素材不在 MIT 许可范围内，见 [NOTICE](NOTICE)。

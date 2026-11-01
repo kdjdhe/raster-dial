@@ -7,10 +7,15 @@ Bundled artwork
 ---------------
 The images under app/src/main/assets/groups/, app/src/main/assets/groups_land/,
 app/src/main/res/mipmap-*/, app/src/main/res/drawable/thumb.png, and
-docs/screenshots/ are fan artwork of characters from Zenless Zone Zero, collected
-locally for this personal project. They are NOT covered by the MIT License and are
-not licensed for redistribution or commercial use. Character names, designs and
-artwork remain the property of their respective rights holders (miHoYo / HoYoverse).
+docs/screenshots/ are official artwork from the Zenless Zone Zero "绳网情报站"
+wiki published by miHoYo:
 
-If you fork or redistribute this project, replace those images with artwork you have
-the rights to use.
+    https://baike.mihoyo.com/zzz/wiki/channel/map/2/43
+
+They are NOT covered by the MIT License. Public availability on the official
+wiki does not grant permission to redistribute or use them commercially.
+Copyright remains with miHoYo / HoYoverse.
+
+This repository includes them only as a personal demonstration. If you fork or
+redistribute this project, remove or replace them, or obtain permission from the
+rights holder.

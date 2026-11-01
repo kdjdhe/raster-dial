@@ -17,4 +17,4 @@
 - Home-screen live wallpaper only; OEM lock screens are a separate system and are not taken over
 - Canvas `saveLayer` renderer; a GLES renderer is planned for tablets and 4K panels
 - Continuous 60 fps redraw while visible; event-driven dirty rendering is planned
-- Bundled Zenless Zone Zero fan art is not MIT-licensed; replace it before redistribution
+- Bundled Zenless Zone Zero official artwork from the official "绳网情报站" wiki is not MIT-licensed; remove or replace it before redistribution

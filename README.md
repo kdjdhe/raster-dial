@@ -5,11 +5,10 @@
 
 **简体中文** | [English](README.en.md)
 
-Android 9+ 的光栅动态壁纸：倾斜手机，画面在 2–3 张图之间沿一条软渐变边界切换；内置 14 组角色、自定义槽位、平板横竖屏与消抖。
+Android 9+ 的光栅动态壁纸：倾斜手机，画面在 2–3 张图之间沿一条软渐变边界切换；内置 5 组示例角色、自定义槽位、平板横竖屏与消抖。
 
 <p align="center">
   <img src="docs/screenshots/home.webp" width="260" alt="桌面上的 Raster Dial 壁纸">
-  <img src="docs/screenshots/app.png" width="260" alt="Raster Dial 主界面">
   <img src="docs/screenshots/editor.png" width="260" alt="自定义光栅组编辑">
 </p>
 
@@ -19,14 +18,14 @@ Android 9+ 的光栅动态壁纸：倾斜手机，画面在 2–3 张图之间�
 - **2D 方向**：左右、上下、斜向倾斜都连续；边界方向跟随倾斜方向。
 - **循环切换**：`phase` 不截断，2–3 张图按 `1→2→3→1` 循环。
 - **消抖**：One Euro Filter + 软死区 + 方向死区 + 3 圈/秒限速，压住手抖；平板/横屏半程角度 ×1.2。
-- **14 组内置 + 中文名**：爱丽丝、耀嘉音、伊芙琳、雨果、星见雅、妮可、诺姆、普罗米娅、佩洛伊斯、蕾米埃尔、星徽·比利、薇薇安、叶瞬光、仪玄。
+- **5 组内置示例 + 中文名**：仪玄、佩洛伊斯、星见雅、薇薇安、叶瞬光。
 - **自定义组**：1–6 个槽位，选图、旋转 90°、↑↓ 排序、删除。
 - **平板/折叠屏**：运行时按 surface 宽高比选竖/横素材，aspect-fill 裁切，按屏幕旋转补偿方向。
 - **只做壁纸**：不接管锁屏、不刷机、无开机自启服务。
 
 ### 效果细节
 
-- 每组 2–3 张图：Pyrois 2 张，其余 13 组各 3 张，共 14 组 / 41 张。
+- 每组 2–3 张图：Pyrois 2 张，其余 4 组各 3 张，共 5 组 / 14 张。
 - 组内按色彩丰富度排序：1 = 最丰富，2/3 递减（Hasler-Süsstrunk 指标，分数见 `app/src/main/assets/groups/groups.json` 的 `scores`）。
 - 原图顺时针旋转 90° 做竖屏素材；横屏素材用原图不旋转。
 - 半程角度（一次切图所需倾角）：高 14° / 中 20°（默认）/ 低 30°；完整 A→B→A 循环 = 2 × 半程。
@@ -79,7 +78,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 |---|---|
 | `app/src/main/java/com/raster/dial/` | Java 源码：壁纸服务、GL 预览、传感器与消抖、组清单、自定义槽位 |
 | `app/src/main/AndroidManifest.xml` | App、预览页、壁纸服务、调试广播的声明 |
-| `app/src/main/assets/groups/` | 竖屏素材 1080×2400（14 组，原图旋转 90°） |
+| `app/src/main/assets/groups/` | 竖屏素材 1080×2400（5 组，原图旋转 90°） |
 | `app/src/main/assets/groups_land/` | 横屏素材 1920×1080（原图不旋转） |
 | `app/src/main/assets/groups/groups.json` | 组清单、中文名、色彩丰富度分数 |
 | `app/src/main/res/` | 图标、字符串、壁纸元数据 |
@@ -92,7 +91,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 | 控件 | 作用 |
 |---|---|
-| 光栅组 | 14 组内置 + 自定义；显示为「中文名 · English」 |
+| 光栅组 | 5 组内置 + 自定义；显示为「中文名 · English」 |
 | 灵敏度 | 高 14° / 中 20° / 低 30°（半程角度） |
 | 壁纸调试信息 | 左下角显示组名、横竖、旋转、`phase`、段号、段内进度、方向、帧耗时 |
 | 反向扫过 | 交换渐变扫过侧 |

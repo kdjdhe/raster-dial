@@ -68,7 +68,7 @@ public class MainActivity extends Activity {
         titles.setOrientation(LinearLayout.VERTICAL);
         titles.setPadding(Ui.dp(this, 14), 0, 0, 0);
         titles.addView(Ui.text(this, "Raster Dial", 22, Ui.TEXT, true));
-        TextView sub = Ui.text(this, "光栅壁纸 · Android 9+ · 14 组 + 自定义", 12, Ui.MUTED, false);
+        TextView sub = Ui.text(this, "光栅壁纸 · Android 9+ · 5 组 + 自定义", 12, Ui.MUTED, false);
         sub.setPadding(0, Ui.dp(this, 4), 0, 0);
         titles.addView(sub);
         header.addView(titles);

@@ -15,37 +15,19 @@ OUT = os.path.join(ROOT, "app", "src", "main", "assets", "groups")
 W, H = 1080, 2400
 
 GROUPS = [
-    ("Alice", "Alice", ["Alice1.png", "Alice2.png", "Alice3.png"]),
-    ("AstraYao", "Astra Yao", ["Astra Yao1.png", "Astra Yao2.png", "Astra Aao3.png"]),
-    ("Evelyn", "Evelyn", ["Evelyn.png", "Evelyn2.png", "Evelyn3.png"]),
-    ("Hugo", "Hugo", ["Hugo1.png", "Hugo2.png", "Hugo3.png"]),
-    ("Miyabi", "Miyabi", ["Miyabi1.png", "Miyabi2.png", "Miyabi3.png"]),
-    ("Nicole", "Nicole", ["Nicole1.png", "Nicole2.png", "Nicole3.png"]),
-    ("Norma", "Norma", ["Norma1.png", "Norma2.png", "Norma3.png"]),
-    ("Promeia", "Promeia", ["Promeia1.png", "Promeiaa2.png", "Promeia3.png"]),
+    ("Yixuan", "Yixuan", ["Yixuan1.jpg", "Yixuan2.jpg", "Yixuan3.jpg"]),
     ("Pyrois", "Pyrois", ["Pyrois1.png", "Pyrois2.png"]),
-    ("Remielle", "Remielle", ["Remielle1.png", "Remielle2.png", "Remielle3.png"]),
-    ("StarlightBilly", "Starlight-Billy", ["Starlight-Billy1.png", "Starlight-Billy2.png", "Satrlight-Billy3.png"]),
+    ("Miyabi", "Miyabi", ["Miyabi1.png", "Miyabi2.png", "Miyabi3.png"]),
     ("Vivian", "Vivian", ["Vivian1.png", "Vivian2.png", "Vivian3.png"]),
     ("YeShunguang", "Ye Shunguang", ["Ye Shunguang1.png", "Ye Shunguang2.png", "Ye Shunguang3.png"]),
-    ("Yixuan", "Yixuan", ["Yixuan1.jpg", "Yixuan2.jpg", "Yixuan3.jpg"]),
 ]
 
 NAME_ZH = {
-    "Alice": "爱丽丝",
-    "AstraYao": "耀嘉音",
-    "Evelyn": "伊芙琳",
-    "Hugo": "雨果",
-    "Miyabi": "星见雅",
-    "Nicole": "妮可",
-    "Norma": "诺姆",
-    "Promeia": "普罗米娅",
+    "Yixuan": "仪玄",
     "Pyrois": "佩洛伊斯",
-    "Remielle": "蕾米埃尔",
-    "StarlightBilly": "星徽·比利",
+    "Miyabi": "星见雅",
     "Vivian": "薇薇安",
     "YeShunguang": "叶瞬光",
-    "Yixuan": "仪玄",
 }
 
 

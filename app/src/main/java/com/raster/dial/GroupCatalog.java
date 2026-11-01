@@ -109,8 +109,18 @@ public final class GroupCatalog {
     }
 
     public static String currentId(Context c) {
-        return c.getSharedPreferences("lock", Context.MODE_PRIVATE)
-                .getString(PREF_GROUP, DEFAULT_ID);
+        SharedPreferences sp = c.getSharedPreferences("lock", Context.MODE_PRIVATE);
+        String id = sp.getString(PREF_GROUP, DEFAULT_ID);
+        if (CUSTOM_ID.equals(id)) {
+            return id;
+        }
+        for (Group g : builtins(c)) {
+            if (g.id.equals(id)) {
+                return id;
+            }
+        }
+        sp.edit().putString(PREF_GROUP, DEFAULT_ID).apply();
+        return DEFAULT_ID;
     }
 
     public static void setCurrentId(Context c, String id) {

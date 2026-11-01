@@ -5,11 +5,10 @@
 
 # Raster Dial
 
-A lenticular live wallpaper for Android 9+: tilt the phone and the image transitions between 2–3 layers along a single soft gradient boundary. 14 built-in groups, custom slots, tablet/landscape support, and debouncing.
+A lenticular live wallpaper for Android 9+: tilt the phone and the image transitions between 2–3 layers along a single soft gradient boundary. 5 built-in demo groups, custom slots, tablet/landscape support, and debouncing.
 
 <p align="center">
   <img src="docs/screenshots/home.webp" width="260" alt="Raster Dial wallpaper on the home screen">
-  <img src="docs/screenshots/app.png" width="260" alt="Raster Dial main screen">
   <img src="docs/screenshots/editor.png" width="260" alt="Custom group editor">
 </p>
 
@@ -19,14 +18,14 @@ A lenticular live wallpaper for Android 9+: tilt the phone and the image transit
 - **2D direction**: left/right, up/down, and diagonal tilts all work; the boundary follows the tilt direction.
 - **Cycling**: `phase` is unbounded; 2–3 images cycle as `1→2→3→1`.
 - **Debouncing**: One Euro Filter + soft dead zone + direction dead zone + a 3 cycles/s phase limit; the half-range angle is multiplied by 1.2 on tablets/landscape.
-- **14 built-in groups + custom**: Alice, Astra Yao, Evelyn, Hugo, Miyabi, Nicole, Norma, Promeia, Pyrois, Remielle, Starlight-Billy, Vivian, Ye Shunguang, Yixuan.
+- **5 built-in demo groups + custom**: Yixuan, Pyrois, Miyabi, Vivian, Ye Shunguang.
 - **Custom groups**: 1–6 slots with pick, rotate 90°, reorder, and delete.
 - **Tablets/foldables**: the runtime surface aspect ratio selects portrait/landscape assets; aspect-fill cropping; display-rotation compensation.
 - **Wallpaper only**: no lock-screen takeover, no flashing, no boot service.
 
 ### Effect Details
 
-- 2–3 images per group: Pyrois has 2; the other 13 have 3; 14 groups / 41 images in total.
+- 2–3 images per group: Pyrois has 2; the other 4 have 3; 5 groups / 14 images in total.
 - Images are ranked by colorfulness (1 = most colorful; 2/3 decrease). Scores are in `app/src/main/assets/groups/groups.json` under `scores`.
 - Portrait assets are the source images rotated 90° clockwise; landscape assets use the original orientation.
 - Half-range angle (tilt needed for one transition): high 14° / medium 20° (default) / low 30°. A full A→B→A cycle is 2 × the half-range.
@@ -79,7 +78,7 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 |---|---|
 | `app/src/main/java/com/raster/dial/` | Java sources: wallpaper service, GL preview, sensors/debouncing, group catalog, custom slots |
 | `app/src/main/AndroidManifest.xml` | App, preview, wallpaper service, and debug receiver declarations |
-| `app/src/main/assets/groups/` | Portrait assets 1080×2400 (14 groups; source images rotated 90°) |
+| `app/src/main/assets/groups/` | Portrait assets 1080×2400 (5 groups; source images rotated 90°) |
 | `app/src/main/assets/groups_land/` | Landscape assets 1920×1080 (source images unrotated) |
 | `app/src/main/assets/groups/groups.json` | Group catalog, names, colorfulness scores |
 | `app/src/main/res/` | Icons, strings, wallpaper metadata |
@@ -92,7 +91,7 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 
 | Control | Purpose |
 |---|---|
-| Group | 14 built-in groups + custom; shown as "Chinese name · English" |
+| Group | 5 built-in demo groups + custom; shown as "Chinese name · English" |
 | Sensitivity | High 14° / medium 20° / low 30° (half-range angle) |
 | Wallpaper debug line | Bottom-left: group, portrait/landscape, rotation, `phase`, segment, segment progress, direction, frame time |
 | Invert sweep | Swap the side the gradient sweeps from |

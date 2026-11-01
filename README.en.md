@@ -214,7 +214,7 @@ The current primary in `BuildConfig` is the placeholder `https://updates.example
 
 ## Tested Lock-Screen Support
 
-The app does not implement a lock screen itself. Whether the system live-wallpaper preview offers "set as lock screen / set for both" depends on each vendor's wallpaper manager and keyguard; AOSP provides no unified guarantee. Verified on real devices (2026-11-01):
+The app does not implement a lock screen itself. Whether the system live-wallpaper preview offers "set as lock screen / set for both" depends on each vendor's wallpaper manager and keyguard; AOSP provides no unified guarantee. Observed on real devices (2026-11-01):
 
 | Device | OS | Android | Settable as lock screen | Notes |
 |---|---|---|---|---|

@@ -247,6 +247,25 @@ public final class CustomStore {
         writeDisplay(master, slot.rotation, new File(dir(c), slot.display));
     }
 
+    /** 导入分享包的一张图：master 字节落盘 -> 生成 display -> 加入槽位。 */
+    public static synchronized void importBytes(Context c, CustomGroup g,
+                                                byte[] webp, int rotation) throws Exception {
+        String id = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+        File master = new File(dir(c), "m_" + id + ".webp");
+        try (FileOutputStream fos = new FileOutputStream(master)) {
+            fos.write(webp);
+        }
+        Slot s = new Slot(master.getName(), "s_" + id + ".webp", rotation);
+        try {
+            renderDisplay(c, s);
+        } catch (Exception e) {
+            //noinspection ResultOfMethodCallIgnored
+            master.delete();
+            throw e;
+        }
+        g.slots.add(s);
+    }
+
     private static void writeDisplay(Bitmap master, int rotation, File out) throws Exception {
         Bitmap rotated = rotate(master, rotation);
         Bitmap scaled = scaleDown(rotated, 1600);

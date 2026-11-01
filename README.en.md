@@ -22,6 +22,9 @@ A lenticular live wallpaper for Android 9+: tilt the phone and the image transit
 - **Tablets/foldables**: the runtime surface aspect ratio selects portrait/landscape assets; aspect-fill cropping; display-rotation compensation.
 - **Wallpaper only**: no lock-screen takeover, no flashing, no boot service.
 - **In-app updates**: Chengdu primary + GitHub fallback; SHA-256 verification; system installer.
+- **6 themes**: Obsidian / Glacier / Moss / Violet / Crimson / Gold; one-tap switch, remembered.
+- **Long-press drag reordering**: lift a card in the picker, 1:1 tracking, spring make-way, per-slot haptic.
+- **Search / export & import**: search groups in the picker; bundle a custom group to share, import others'.
 
 ### Effect Details
 

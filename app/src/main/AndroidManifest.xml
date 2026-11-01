@@ -29,13 +29,11 @@
 
         <activity
             android:name=".GroupEditorActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            android:exported="false" />
 
         <activity
             android:name=".GroupPickerActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            android:exported="false" />
 
         <receiver
             android:name=".WallDebugReceiver"
@@ -60,6 +58,11 @@
         <provider
             android:name=".ApkProvider"
             android:authorities="${applicationId}.apk"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+        <provider
+            android:name=".ExportProvider"
+            android:authorities="${applicationId}.export"
             android:exported="false"
             android:grantUriPermissions="true" />
     </application>

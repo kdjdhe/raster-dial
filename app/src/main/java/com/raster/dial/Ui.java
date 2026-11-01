@@ -1,27 +1,119 @@
 package com.raster.dial;
 
+import android.animation.TimeInterpolator;
+import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
+import android.os.Build;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
-/** 轻量 UI 工具：深色卡片、圆角、ripple、chip。不依赖 AndroidX。 */
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Apple-HIG 风格设计系统（无 AndroidX，纯平台 View）。
+ *
+ * 排版：字号-字重-字距-行距成套（大字负字距、小字正字距）；
+ * 材质：分层表面 + 发丝线描边，不叠半透明；
+ * 动效：弹簧（damping/response），总是从当前值起跳，可中断；
+ * 反馈：按压即缩放 + ripple，提交动作触发触觉。
+ */
 public final class Ui {
 
-    public static final int BG = 0xFF0B0B10;
-    public static final int BG2 = 0xFF12121A;
-    public static final int SURFACE = 0xFF17171F;
-    public static final int SURFACE2 = 0xFF23232E;
-    public static final int ACCENT = 0xFFFF7A3D;
-    public static final int ON_ACCENT = 0xFF1A0D05;
-    public static final int TEXT = 0xFFF5F5F7;
-    public static final int MUTED = 0xFF9A9AA5;
-    public static final int STROKE = 0x22FFFFFF;
+    // ---------- 主题色板：全部色值经 applyTheme 写入，各处只读字段 ----------
+    public static final String[] THEME_NAMES = {
+            "曜石", "冰川", "森绿", "霞紫", "绯红", "鎏金",
+    };
+
+    /** 一套完整配色：分层表面 + 强调色 + 文字层级。 */
+    private static final class Palette {
+        final int bg, bg2, card, cardHi, accent, onAccent, text, secondary, tertiary, danger;
+
+        Palette(int bg, int bg2, int card, int cardHi, int accent, int onAccent,
+                int text, int secondary, int tertiary, int danger) {
+            this.bg = bg;
+            this.bg2 = bg2;
+            this.card = card;
+            this.cardHi = cardHi;
+            this.accent = accent;
+            this.onAccent = onAccent;
+            this.text = text;
+            this.secondary = secondary;
+            this.tertiary = tertiary;
+            this.danger = danger;
+        }
+    }
+
+    private static final Palette[] THEMES = {
+            // 曜石（默认）：近黑 + 橙
+            new Palette(0xFF0A0A0F, 0xFF101018, 0xFF16161F, 0xFF20202C,
+                    0xFFFF7A3D, 0xFF1A0D05, 0xFFF5F5F7, 0xFFA2A2AE, 0xFF6F6F7C, 0xFFFF6B6B),
+            // 冰川：冷蓝黑 + 青
+            new Palette(0xFF0A0F14, 0xFF0F151C, 0xFF141B24, 0xFF1D2733,
+                    0xFF4FC3F7, 0xFF06212E, 0xFFF0F5F8, 0xFF9FB4C2, 0xFF66798A, 0xFFFF6B7A),
+            // 森绿：墨绿 + 荧绿
+            new Palette(0xFF0A120D, 0xFF0F1A13, 0xFF132119, 0xFF1B2C22,
+                    0xFF3DDC97, 0xFF06231A, 0xFFEFF7F2, 0xFFA2B8AC, 0xFF6C8177, 0xFFFF6B6B),
+            // 霞紫：暗紫 + 雾紫
+            new Palette(0xFF0F0A14, 0xFF150F1C, 0xFF1A1424, 0xFF251D33,
+                    0xFFB08CFF, 0xFF1D1040, 0xFFF5F2F8, 0xFFACA2BE, 0xFF746C87, 0xFFFF6B8B),
+            // 绯红：暗酒红 + 玫红
+            new Palette(0xFF140A0C, 0xFF1C0F12, 0xFF231418, 0xFF301C21,
+                    0xFFFF5C7A, 0xFF2E0810, 0xFFF8F2F3, 0xFFBEA2A8, 0xFF876C72, 0xFFFFA94D),
+            // 鎏金：暖黑 + 金
+            new Palette(0xFF121008, 0xFF181509, 0xFF1E1B10, 0xFF2A2517,
+                    0xFFF2C14E, 0xFF241A03, 0xFFF7F4EA, 0xFFBAB2A0, 0xFF857D6B, 0xFFFF6B6B),
+    };
+
+    public static int BG, BG2, CARD, CARD_HI, ACCENT, ACCENT_DIM,
+            ON_ACCENT, TEXT, SECONDARY, TERTIARY, DANGER;
+    public static final int HAIRLINE = 0x14FFFFFF;
+    public static final int RIPPLE = 0x2AFFFFFF;
+    public static int themeIndex = 0;
+
+    /** 应用并持久化主题；切换后需重建界面（或重进）以刷新所有已建视图。 */
+    public static void applyTheme(Context c, int idx) {
+        themeIndex = Math.max(0, Math.min(THEMES.length - 1, idx));
+        Palette p = THEMES[themeIndex];
+        BG = p.bg;
+        BG2 = p.bg2;
+        CARD = p.card;
+        CARD_HI = p.cardHi;
+        ACCENT = p.accent;
+        ACCENT_DIM = (0x24 << 24) | (p.accent & 0xFFFFFF);
+        ON_ACCENT = p.onAccent;
+        TEXT = p.text;
+        SECONDARY = p.secondary;
+        TERTIARY = p.tertiary;
+        DANGER = p.danger;
+        c.getSharedPreferences("lock", Context.MODE_PRIVATE)
+                .edit().putInt("theme", themeIndex).apply();
+    }
+
+    /** 从偏好恢复主题（各 Activity onCreate 时调用）。 */
+    public static void loadTheme(Context c) {
+        int idx = c.getSharedPreferences("lock", Context.MODE_PRIVATE).getInt("theme", 0);
+        applyTheme(c, idx);
+    }
+
+    public static int themeAccent(int idx) {
+        return THEMES[Math.max(0, Math.min(THEMES.length - 1, idx))].accent;
+    }
+
+    public static int themeBg(int idx) {
+        return THEMES[Math.max(0, Math.min(THEMES.length - 1, idx))].bg;
+    }
 
     private Ui() {
     }
@@ -30,6 +122,7 @@ public final class Ui {
         return Math.round(v * c.getResources().getDisplayMetrics().density);
     }
 
+    // ---------- 形状 ----------
     public static GradientDrawable round(Context c, int color, float radiusDp) {
         GradientDrawable d = new GradientDrawable();
         d.setColor(color);
@@ -37,56 +130,421 @@ public final class Ui {
         return d;
     }
 
-    public static GradientDrawable roundStroke(Context c, int color, float radiusDp) {
+    /** 卡片表面：圆角 + 发丝线描边。 */
+    public static GradientDrawable surface(Context c, int color, float radiusDp) {
         GradientDrawable d = round(c, color, radiusDp);
-        d.setStroke(dp(c, 1), STROKE);
+        d.setStroke(dp(c, 1), HAIRLINE);
         return d;
     }
 
     public static RippleDrawable ripple(Context c, int color, float radiusDp) {
-        return new RippleDrawable(ColorStateList.valueOf(0x33FFFFFF),
+        return new RippleDrawable(ColorStateList.valueOf(RIPPLE),
                 round(c, color, radiusDp), null);
     }
 
-    public static TextView text(Context c, String s, float sp, int color, boolean bold) {
+    // ---------- 排版刻度：weight + size + tracking 成套 ----------
+    private static TextView type(Context c, String s, float sp, int color,
+                                 int weight, float trackingEm, float lineSpacingDp) {
         TextView t = new TextView(c);
         t.setText(s);
         t.setTextSize(sp);
         t.setTextColor(color);
-        t.setTypeface(Typeface.create("sans-serif",
-                bold ? Typeface.BOLD : Typeface.NORMAL));
+        t.setTypeface(Typeface.create("sans-serif", weight));
+        if (trackingEm != 0f) {
+            t.setLetterSpacing(trackingEm);
+        }
+        if (lineSpacingDp > 0f) {
+            t.setLineSpacing(dp(c, lineSpacingDp), 1f);
+        }
         t.setIncludeFontPadding(false);
         return t;
     }
 
+    public static TextView largeTitle(Context c, String s) {
+        return type(c, s, 28, TEXT, Typeface.BOLD, -0.02f, 0);
+    }
+
+    public static TextView title(Context c, String s) {
+        return type(c, s, 20, TEXT, Typeface.BOLD, -0.01f, 0);
+    }
+
+    public static TextView heading(Context c, String s) {
+        return type(c, s, 16, TEXT, Typeface.BOLD, 0f, 0);
+    }
+
+    public static TextView body(Context c, String s) {
+        return type(c, s, 15, TEXT, Typeface.NORMAL, 0f, 0);
+    }
+
+    public static TextView callout(Context c, String s) {
+        return type(c, s, 13, SECONDARY, Typeface.NORMAL, 0.01f, 0);
+    }
+
+    public static TextView footnote(Context c, String s) {
+        return type(c, s, 11, TERTIARY, Typeface.NORMAL, 0.02f, 2);
+    }
+
+    public static TextView overline(Context c, String s) {
+        return type(c, s, 11, SECONDARY, Typeface.BOLD, 0.06f, 0);
+    }
+
+    /** 兼容旧调用的快捷文本。 */
+    public static TextView text(Context c, String s, float sp, int color, boolean bold) {
+        return type(c, s, sp, color, bold ? Typeface.BOLD : Typeface.NORMAL, 0f, 0);
+    }
+
+    // ---------- 卡片 ----------
     public static LinearLayout card(Context c) {
         LinearLayout l = new LinearLayout(c);
         l.setOrientation(LinearLayout.VERTICAL);
-        l.setPadding(dp(c, 18), dp(c, 16), dp(c, 18), dp(c, 16));
-        l.setBackground(roundStroke(c, SURFACE, 20));
+        l.setPadding(dp(c, 18), dp(c, 18), dp(c, 18), dp(c, 18));
+        l.setBackground(surface(c, CARD, 22));
         return l;
     }
 
+    // ---------- 按钮 / chip ----------
     public static TextView button(Context c, String s, boolean primary) {
-        TextView t = text(c, s, 15, primary ? ON_ACCENT : TEXT, true);
+        TextView t = type(c, s, 15, primary ? ON_ACCENT : TEXT,
+                Typeface.BOLD, 0f, 0);
         t.setGravity(Gravity.CENTER);
-        t.setPadding(dp(c, 16), dp(c, 13), dp(c, 16), dp(c, 13));
-        t.setBackground(ripple(c, primary ? ACCENT : SURFACE2, 14));
+        t.setPadding(dp(c, 18), dp(c, 14), dp(c, 18), dp(c, 14));
+        t.setBackground(ripple(c, primary ? ACCENT : CARD_HI, 15));
         t.setClickable(true);
         t.setFocusable(true);
-        return t;
+        return pressable(t);
     }
 
     public static TextView chip(Context c, String s, boolean selected) {
-        TextView t = text(c, s, 13, selected ? ON_ACCENT : TEXT, selected);
+        TextView t = type(c, s, 13, selected ? ON_ACCENT : TEXT,
+                selected ? Typeface.BOLD : Typeface.NORMAL, 0f, 0);
         t.setGravity(Gravity.CENTER);
         t.setPadding(dp(c, 14), dp(c, 9), dp(c, 14), dp(c, 9));
-        t.setBackground(ripple(c, selected ? ACCENT : SURFACE2, 18));
+        t.setBackground(ripple(c, selected ? ACCENT : CARD_HI, 999));
         t.setClickable(true);
         t.setFocusable(true);
-        return t;
+        return pressable(t);
     }
 
+    /** 设置式列表行：标题 + 可选值 + ›；分组容器负责圆角裁切。 */
+    public static LinearLayout listRow(Context c, String title, String tail, boolean danger) {
+        LinearLayout row = new LinearLayout(c);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(dp(c, 52));
+        row.setPadding(dp(c, 16), dp(c, 8), dp(c, 14), dp(c, 8));
+        row.setForeground(new RippleDrawable(ColorStateList.valueOf(RIPPLE),
+                null, new GradientDrawable()));
+        row.setClickable(true);
+        row.setFocusable(true);
+        pressable(row);
+
+        TextView tv = type(c, title, 15, danger ? DANGER : TEXT,
+                danger ? Typeface.BOLD : Typeface.NORMAL, 0f, 0);
+        row.addView(tv, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        if (tail != null && !tail.isEmpty()) {
+            TextView value = type(c, tail, 13, TERTIARY, Typeface.NORMAL, 0f, 0);
+            value.setPadding(dp(c, 8), 0, 0, 0);
+            row.addView(value, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+
+        TextView chevron = type(c, "›", 18, danger ? DANGER : TERTIARY,
+                Typeface.NORMAL, 0f, 0);
+        row.addView(chevron, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+        return row;
+    }
+
+    /** 分组容器：包住若干 listRow。 */
+    public static LinearLayout group(Context c) {
+        LinearLayout g = new LinearLayout(c);
+        g.setOrientation(LinearLayout.VERTICAL);
+        g.setBackground(surface(c, CARD, 22));
+        g.setClipToOutline(true);
+        return g;
+    }
+
+    /** 给分组容器加行 + 行间发丝分隔线（首行无）。 */
+    public static void groupRow(LinearLayout group, View row, Context c) {
+        if (group.getChildCount() > 0) {
+            View line = new View(c);
+            line.setBackgroundColor(HAIRLINE);
+            LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, dp(c, 0.67f));
+            llp.leftMargin = dp(c, 16);
+            group.addView(line, llp);
+        }
+        group.addView(row, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    // ---------- 按压反馈：down 即缩放，up 弹簧回位 ----------
+    public static <V extends View> V pressable(V v) {
+        v.setOnTouchListener((view, ev) -> {
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    scale(view, 0.97f, 0, 1f, 0.12f);
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    scale(view, 1f, 0, 0.8f, 0.4f);
+                    break;
+                default:
+                    break;
+            }
+            return false; // 不消费，click / ripple 照常
+        });
+        return v;
+    }
+
+    // ---------- 触觉：提交类动作调用 ----------
+    public static void haptic(View v) {
+        int id = Build.VERSION.SDK_INT >= 30
+                ? HapticFeedbackConstants.CONFIRM
+                : HapticFeedbackConstants.VIRTUAL_KEY;
+        v.performHapticFeedback(id);
+    }
+
+    /** 轻 tick：拖动跨越卡位等细粒度反馈。 */
+    public static void hapticTick(View v) {
+        v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+    }
+
+    /** 长震：长按进入某状态（如排序）。 */
+    public static void hapticLong(View v) {
+        v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+    }
+
+    // ---------- 弹簧：damping(ζ) / response(s)，从当前值起跳、可中断 ----------
+    private static final class Spring implements TimeInterpolator {
+        private final float zeta, omega, durationMs;
+
+        Spring(float damping, float response, float durationMs) {
+            this.zeta = damping;
+            this.omega = (float) (2 * Math.PI / response);
+            this.durationMs = durationMs;
+        }
+
+        @Override
+        public float getInterpolation(float t) {
+            float sec = t * durationMs / 1000f;
+            if (zeta < 1f) {
+                float wd = omega * (float) Math.sqrt(1 - zeta * zeta);
+                return (float) (1 - Math.exp(-zeta * omega * sec)
+                        * (Math.cos(wd * sec)
+                        + zeta / Math.sqrt(1 - zeta * zeta) * Math.sin(wd * sec)));
+            }
+            return (float) (1 - (1 + omega * sec) * Math.exp(-omega * sec));
+        }
+    }
+
+    private static final Map<View, Map<String, ValueAnimator>> RUNNING = new HashMap<>();
+
+    /** 按（View, 属性）登记：同一 View 的不同属性动画互不取消。 */
+    private static void track(View v, String prop, ValueAnimator a) {
+        Map<String, ValueAnimator> m = RUNNING.get(v);
+        if (m == null) {
+            m = new HashMap<>();
+            RUNNING.put(v, m);
+        }
+        ValueAnimator old = m.get(prop);
+        if (old != null) {
+            old.cancel();
+        }
+        m.put(prop, a);
+        a.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator anim) {
+                Map<String, ValueAnimator> mm = RUNNING.get(v);
+                if (mm != null) {
+                    mm.remove(prop);
+                }
+            }
+        });
+    }
+
+    /** 弹簧动画到目标 alpha。 */
+    public static void alpha(View v, float to) {
+        float from = v.getAlpha();
+        if (Math.abs(to - from) < 0.01f) {
+            v.setAlpha(to);
+            return;
+        }
+        ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+        a.setInterpolator(new Spring(1f, 0.3f, 260));
+        a.addUpdateListener(anim ->
+                v.setAlpha(from + (to - from) * (float) anim.getAnimatedValue()));
+        track(v, "alpha", a);
+        a.start();
+    }
+
+    private static void scale(View v, float to, int delayMs, float damping, float response) {
+        float from = v.getScaleX();
+        ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+        a.setStartDelay(delayMs);
+        a.setInterpolator(new Spring(damping, response,
+                Math.max(120, response * 5000)));
+        a.addUpdateListener(anim -> {
+            float s = from + (to - from) * (float) anim.getAnimatedValue();
+            v.setScaleX(s);
+            v.setScaleY(s);
+        });
+        track(v, "scale", a);
+        a.start();
+    }
+
+    /** 弹簧动画到目标 translationY。 */
+    public static void springY(View v, float to) {
+        float from = v.getTranslationY();
+        if (Math.abs(to - from) < 0.5f) {
+            v.setTranslationY(to);
+            return;
+        }
+        ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+        a.setInterpolator(new Spring(1f, 0.4f, 420));
+        a.addUpdateListener(anim ->
+                v.setTranslationY(from + (to - from) * (float) anim.getAnimatedValue()));
+        track(v, "y", a);
+        a.start();
+    }
+
+    /** 弹簧动画到目标 (translationX, translationY)：排序换位用。 */
+    public static void springXY(View v, float x, float y) {
+        float fx = v.getTranslationX(), fy = v.getTranslationY();
+        if (Math.abs(x - fx) < 0.5f && Math.abs(y - fy) < 0.5f) {
+            v.setTranslationX(x);
+            v.setTranslationY(y);
+            return;
+        }
+        ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+        a.setInterpolator(new Spring(0.85f, 0.3f, 320));
+        a.addUpdateListener(anim -> {
+            float t = (float) anim.getAnimatedValue();
+            v.setTranslationX(fx + (x - fx) * t);
+            v.setTranslationY(fy + (y - fy) * t);
+        });
+        track(v, "xy", a);
+        a.start();
+    }
+
+    /** 弹簧缩放（拿起/放下卡片）。 */
+    public static void springScale(View v, float to) {
+        float from = v.getScaleX();
+        if (Math.abs(to - from) < 0.01f) {
+            v.setScaleX(to);
+            v.setScaleY(to);
+            return;
+        }
+        ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+        a.setInterpolator(new Spring(0.8f, 0.3f, 280));
+        a.addUpdateListener(anim -> {
+            float s = from + (to - from) * (float) anim.getAnimatedValue();
+            v.setScaleX(s);
+            v.setScaleY(s);
+        });
+        track(v, "scale", a);
+        a.start();
+    }
+
+    /** 入场：淡入 + 上浮（弹簧），配合系统 animator scale 即 reduced-motion 降级。 */
+    public static void appear(View v, int delayMs) {
+        v.setAlpha(0f);
+        v.setTranslationY(dp(v.getContext(), 14));
+        v.postDelayed(() -> {
+            alpha(v, 1f);
+            springY(v, 0f);
+        }, delayMs);
+    }
+
+    // ---------- 分段控件：滑动指示器 + 弹簧 ----------
+    public interface OnSegment {
+        void onSegment(int index);
+    }
+
+    public static LinearLayout segmented(Context c, String[] items, int initial,
+                                         OnSegment listener) {
+        // 外层胶囊；内层 FrameLayout 叠层：thumb 在下、等宽标签行在上。
+        // 标签全部 weight 1f，段宽 = 行宽 / n，thumb 平移 idx * 段宽，几何确定。
+        LinearLayout seg = new LinearLayout(c);
+        seg.setOrientation(LinearLayout.VERTICAL);
+        int pad = dp(c, 3);
+        seg.setPadding(pad, pad, pad, pad);
+        seg.setBackground(round(c, 0xFF0D0D13, 999));
+        seg.setClipToOutline(true);
+
+        final int[] sel = {initial};
+        final TextView[] labels = new TextView[items.length];
+
+        FrameLayout stage = new FrameLayout(c);
+        seg.addView(stage, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        final View thumb = new View(c);
+        thumb.setBackground(round(c, 0x30FFFFFF, 999));
+        stage.addView(thumb, new FrameLayout.LayoutParams(
+                0, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        LinearLayout row = new LinearLayout(c);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        for (int i = 0; i < items.length; i++) {
+            final int idx = i;
+            TextView label = type(c, items[i], 13,
+                    idx == initial ? TEXT : SECONDARY,
+                    idx == initial ? Typeface.BOLD : Typeface.NORMAL, 0f, 0);
+            label.setGravity(Gravity.CENTER);
+            label.setClickable(true);
+            labels[i] = label;
+            row.addView(label, new LinearLayout.LayoutParams(
+                    0, dp(c, 34), 1f));
+        }
+        stage.addView(row, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
+
+        final float[] segW = {0f};
+        seg.post(() -> {
+            segW[0] = row.getWidth() / (float) items.length;
+            FrameLayout.LayoutParams tlp =
+                    (FrameLayout.LayoutParams) thumb.getLayoutParams();
+            tlp.width = Math.round(segW[0]);
+            thumb.setLayoutParams(tlp);
+            thumb.setTranslationX(sel[0] * segW[0]);
+        });
+
+        for (int i = 0; i < items.length; i++) {
+            final int idx = i;
+            labels[i].setOnClickListener(v -> {
+                if (idx == sel[0] || segW[0] <= 0f) {
+                    return;
+                }
+                haptic(v);
+                labels[sel[0]].setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+                labels[sel[0]].setTextColor(SECONDARY);
+                labels[idx].setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+                labels[idx].setTextColor(TEXT);
+                // 弹簧滑到新段（从当前值起跳）
+                float from = thumb.getTranslationX();
+                float to = idx * segW[0];
+                ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+                a.setInterpolator(new Spring(0.8f, 0.3f, 300));
+                a.addUpdateListener(anim -> thumb.setTranslationX(
+                        from + (to - from) * (float) anim.getAnimatedValue()));
+                track(thumb, "x", a);
+                a.start();
+                sel[0] = idx;
+                listener.onSegment(idx);
+            });
+        }
+        return seg;
+    }
+
+    // ---------- 布局小工具 ----------
     public static void addWithTop(LinearLayout parent, View v, Context c, float topDp) {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -100,5 +558,24 @@ public final class Ui {
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         lp.topMargin = dp(c, topDp);
         return lp;
+    }
+
+    /** 平板/宽屏（sw≥640dp）时把内容列限宽 620dp 居中，避免卡片被拉得过宽。 */
+    public static void adaptWide(Activity a, ScrollView scroll, LinearLayout content) {
+        int sw = a.getResources().getConfiguration().screenWidthDp;
+        if (sw < 640) {
+            scroll.addView(content, new ScrollView.LayoutParams(
+                    ScrollView.LayoutParams.MATCH_PARENT,
+                    ScrollView.LayoutParams.WRAP_CONTENT));
+            return;
+        }
+        FrameLayout wrap = new FrameLayout(a);
+        scroll.addView(wrap, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
+        FrameLayout.LayoutParams clp = new FrameLayout.LayoutParams(
+                dp(a, 620), FrameLayout.LayoutParams.WRAP_CONTENT);
+        clp.gravity = Gravity.CENTER_HORIZONTAL;
+        wrap.addView(content, clp);
     }
 }

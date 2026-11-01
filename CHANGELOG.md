@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.5] - 2026-11-01
+
+### Added
+
+- Apple-HIG style UI redesign: type scale, layered surfaces, spring motion, press-down
+  feedback, and haptics throughout
+- Six themes (曜石 / 冰川 / 森绿 / 霞紫 / 绯红 / 鎏金) with instant switching, persisted
+- Group picker: search, long-press drag reordering (spring make-way, per-slot tick haptic)
+- Custom group export/import for sharing (zip bundle via share sheet / file picker)
+- Tablet / wide-screen adaptation: unlocked orientations, width-capped centered content,
+  3-column grid on wide screens
+
+### Changed
+
+- Main screen: hero current-group card, segmented sensitivity control, settings-style list rows
+- Fullscreen preview: light clock typography, capsule hint, circular close button
+
 ## [0.1.4] - 2026-11-01
 
 ### Fixed

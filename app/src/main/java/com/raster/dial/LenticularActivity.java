@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -97,7 +98,9 @@ public class LenticularActivity extends Activity {
         TextClock clock = new TextClock(this);
         clock.setFormat24Hour("HH:mm");
         clock.setFormat12Hour("HH:mm");
-        clock.setTextSize(72);
+        clock.setTextSize(76);
+        clock.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+        clock.setLetterSpacing(-0.02f);
         clock.setTextColor(Color.WHITE);
         clock.setShadowLayer(14, 0, 4, 0xCC000000);
         clock.setGravity(Gravity.CENTER);
@@ -111,7 +114,8 @@ public class LenticularActivity extends Activity {
         top.addView(clock);
 
         dateView = new TextView(this);
-        dateView.setTextSize(16);
+        dateView.setTextSize(14);
+        dateView.setLetterSpacing(0.04f);
         dateView.setTextColor(0xCCFFFFFF);
         dateView.setShadowLayer(10, 0, 2, 0xCC000000);
         dateView.setGravity(Gravity.CENTER);
@@ -127,31 +131,40 @@ public class LenticularActivity extends Activity {
                 Gravity.TOP));
 
         TextView hint = new TextView(this);
-        hint.setText(group.nameZh + "  ·  上滑退出  ·  左右/上下/斜向倾斜  ·  单条渐变线");
-        hint.setTextSize(13);
-        hint.setTextColor(0xAAFFFFFF);
+        hint.setText(group.nameZh + " · 上滑退出 · 倾斜切换");
+        hint.setTextSize(12);
+        hint.setLetterSpacing(0.03f);
+        hint.setTextColor(0xD9FFFFFF);
         hint.setGravity(Gravity.CENTER);
-        hint.setShadowLayer(8, 0, 2, 0xAA000000);
+        hint.setPadding(dp(16), dp(9), dp(16), dp(9));
+        // 半透明胶囊提示条（材质浮层，压暗保证可读）
+        GradientDrawable pill = new GradientDrawable();
+        pill.setColor(0x66000000);
+        pill.setCornerRadius(dp(999));
+        hint.setBackground(pill);
         FrameLayout.LayoutParams hlp = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.BOTTOM);
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
         hlp.bottomMargin = dp(86);
         root.addView(hint, hlp);
 
         TextView close = new TextView(this);
         close.setText("×");
-        close.setTextSize(30);
-        close.setTextColor(0xCCFFFFFF);
-        close.setShadowLayer(8, 0, 2, 0xAA000000);
-        close.setPadding(dp(18), dp(6), dp(18), dp(6));
+        close.setTextSize(22);
+        close.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        close.setTextColor(0xE6FFFFFF);
+        close.setGravity(Gravity.CENTER);
+        int cs = dp(38);
+        GradientDrawable circle = new GradientDrawable();
+        circle.setColor(0x66000000);
+        circle.setCornerRadius(dp(999));
+        close.setBackground(circle);
         close.setOnClickListener(v -> finish());
         FrameLayout.LayoutParams clp = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.TOP | Gravity.END);
+                cs, cs, Gravity.TOP | Gravity.END);
         clp.topMargin = dp(46);
-        clp.rightMargin = dp(14);
+        clp.rightMargin = dp(16);
         root.addView(close, clp);
 
         setContentView(root);

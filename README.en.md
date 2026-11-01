@@ -44,6 +44,7 @@ A lenticular live wallpaper for Android 9+: tilt the phone and the image transit
 - [Testing](#testing)
 - [Custom Groups](#custom-groups)
 - [Assets and License](#assets-and-license)
+- [Tested Lock-Screen Support](#tested-lock-screen-support)
 - [Known Limitations and Roadmap](#known-limitations-and-roadmap)
 - [License](#license)
 
@@ -208,9 +209,22 @@ The current primary in `BuildConfig` is the placeholder `https://updates.example
 - **Bundled images**: `app/src/main/assets/groups/` and `app/src/main/assets/groups_land/` come from the official miHoYo / 米游社 (Miyoushe) Zenless Zone Zero "绳网情报站" wiki (https://baike.mihoyo.com/zzz/wiki/channel/map/2/43); copyright miHoYo / HoYoverse. They are **not covered by the MIT License**; the public repository is a personal demonstration only and grants no redistribution or commercial rights. The app icon, thumbnail, and README screenshots also contain official artwork. If you redistribute or use the project commercially, remove/replace these images or obtain permission; see [NOTICE](NOTICE).
 - Regenerate assets: put the originals in the `art` directory or set `RASTER_SRC`, then run `tools/build_groups.py` and `tools/build_landscape.py`.
 
+## Tested Lock-Screen Support
+
+The app does not implement a lock screen itself. Whether the system live-wallpaper preview offers "set as lock screen / set for both" depends on each vendor's wallpaper manager and keyguard; AOSP provides no unified guarantee. Verified on real devices (2026-11-01):
+
+| Device | OS | Android | Settable as lock screen | Notes |
+|---|---|---|---|---|
+| Xiaomi 15 Pro | HyperOS 3 (OS3.0.309.0.WOBCNXM.C11) | 16 | ✅ | Preview offers wallpaper / lock screen / both |
+| vivo X200s | OriginOS 6 | 16 | ✅ | Same as above |
+| NZONE | EMUI 11 | 10 | ❌ | Wallpaper only; live wallpaper cannot be set on the lock screen |
+| Honor Pad 9 Pro | MagicOS 8 | 14 | ❌ | Same as above |
+
+Pattern: HyperOS / OriginOS integrate live wallpapers into the keyguard and expose the lock-screen entry; EMUI / MagicOS lock-screen wallpapers go through their own static pipelines.
+
 ## Known Limitations and Roadmap
 
-- **Home-screen live wallpaper only**; EMUI / MIUI / One UI / ColorOS lock screens are a separate system and are not guaranteed.
+- **Home-screen live wallpaper by design**; whether it can also be set as the lock-screen wallpaper depends on the vendor's keyguard implementation — see [Tested Lock-Screen Support](#tested-lock-screen-support).
 - The wallpaper uses a Canvas `saveLayer` + `LinearGradient` renderer; tablets/4K panels could use EGL + GLES2 to reduce GPU work.
 - While visible, it redraws every 16 ms; event-driven + dirty rendering is planned to approach zero redraws when idle.
 - Memory headroom: downscale for the target screen, RGB_565, and a 1600 px display edge for custom images.

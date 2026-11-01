@@ -44,6 +44,7 @@ Android 9+ 的光栅动态壁纸：倾斜手机，画面在 2–3 张图之间�
 - [测试与验证](#测试与验证)
 - [自定义光栅组](#自定义光栅组)
 - [素材与许可](#素材与许可)
+- [锁屏壁纸实测](#锁屏壁纸实测)
 - [已知限制与路线图](#已知限制与路线图)
 - [许可证](#许可证)
 
@@ -208,9 +209,22 @@ App 的更新检查是「成都主源 + GitHub 回退」：
 - **内置图片**：`app/src/main/assets/groups/` 与 `app/src/main/assets/groups_land/` 来自米哈游 / 米游社《绝区零》官方「绳网情报站」Wiki（https://baike.mihoyo.com/zzz/wiki/channel/map/2/43），版权归米哈游 / HoYoverse。**不包含在 MIT 许可内**；公开仓库仅作个人演示，不构成再分发或商用授权。App 图标、缩略图与 README 截图同样包含官方素材。若你要再分发或商用，请移除/替换为你有权使用的图片，或先取得授权；详见 [NOTICE](NOTICE)。
 - 重新生成素材：把原图放进 `art` 目录或设置 `RASTER_SRC`，再运行 `tools/build_groups.py` 与 `tools/build_landscape.py`。
 
+## 锁屏壁纸实测
+
+本 App 不自己实现锁屏；系统动态壁纸预览页里是否出现「设为锁屏 / 同时设置」，由各厂商的壁纸管理器与 keyguard 实现决定，AOSP 没有统一 API 保证。真机实测（2026-11-01）：
+
+| 设备 | 系统 | Android | 能设为锁屏 | 实测表现 |
+|---|---|---|---|---|
+| 小米 15 Pro | HyperOS 3（OS3.0.309.0.WOBCNXM.C11） | 16 | ✅ | 预览页提供「仅壁纸 / 仅锁屏 / 同时设置」，可选锁屏 |
+| vivo X200s | OriginOS 6 | 16 | ✅ | 同上 |
+| NZONE | EMUI 11 | 10 | ❌ | 只有壁纸选项，动态壁纸设不进锁屏 |
+| 荣耀平板 9 Pro | MagicOS 8 | 14 | ❌ | 同上 |
+
+规律：HyperOS / OriginOS 这类把动态壁纸接进 keyguard 的系统会开放锁屏入口；EMUI / MagicOS 的锁屏壁纸走自家静态图体系，动态壁纸设不进去。
+
 ## 已知限制与路线图
 
-- 只做**桌面动态壁纸**；EMUI / MIUI / One UI / ColorOS 的锁屏壁纸通常是独立体系，不保证上锁屏。
+- 只做**桌面动态壁纸**；能否设到锁屏由厂商 keyguard 实现决定，真机实测见[锁屏壁纸实测](#锁屏壁纸实测)。
 - 壁纸当前用 Canvas `saveLayer` + `LinearGradient` 绘制；平板/4K 可换 EGL + GLES2 降低 GPU 开销。
 - 当前可见时按 16ms 连续重绘；计划改为事件驱动 + 脏检查，静止时接近 0 重绘。
 - 内存优化空间：按屏幕尺寸降采样、RGB_565，以及自定义图 display 最长边 1600px。

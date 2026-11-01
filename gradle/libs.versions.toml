@@ -1,0 +1,29 @@
+[versions]
+android-compileSdk = "36"
+android-targetSdk = "29"
+android-minSdk = "29"
+
+agp = "9.2.1"
+annotation = "1.9.1"
+coreKtx = "1.16.0"
+appcompat = "1.7.0"
+constraintlayout = "2.2.1"
+material = "1.12.0"
+mpandroidchart = "3.1.0"
+
+[libraries]
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version = "3.7.0" }
+androidx-runner = { module = "androidx.test:runner", version = "1.7.0" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpandroidchart" }
+junit = { module = "junit:junit", version = "4.13.2" }
+kotlintest-runner-junit5 = { module = "io.kotlintest:kotlintest-runner-junit5", version = "3.4.2" }
+mockk = { module = "io.mockk:mockk", version = "1.14.11" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }

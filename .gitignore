@@ -1,0 +1,29 @@
+# Gradle / Android build output
+.gradle/
+build/
+app/build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Signing material and packaged artifacts
+*.jks
+*.keystore
+*.apk
+*.aab
+
+# Local-only working dirs
+work/
+probe/
+art/
+captures/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Local lint scratch
+.readme-lint/

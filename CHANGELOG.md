@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.8] - 2026-11-02
+
+### Added
+
+- Two new transition styles alongside the gradient line:
+  - 百叶窗 (venetian blinds): six strips (vertical for horizontal sweeps, horizontal for
+    vertical), each running its own synchronized boundary, with thin dividers.
+  - 类OriginOS: one wide, soft gradient line sweeping across the screen.
+  - Both are driven by the instantaneous tilt mapped to scene index (one scene per
+    0.7x the half-range angle, hysteresis), so holding a tilt settles on a stable scene;
+    every switch commits in a fixed 100ms run with a per-slot tick — no intermediate states.
+- Configurable axis: gradient line = 全向 / 仅横向 / 仅竖向 (signed single-axis follow);
+  blinds and 类OriginOS = 横向 / 竖向.
+- Eye-care strength slider (persistent luminance attenuation, 0% = off) that reduces
+  scene-switch flashing without adding temporal flicker; ticks haptics per 1% step.
+- Main screen rebuilds in place on theme switch (no entrance replay, keeps scroll position).
+
+### Changed
+
+- Axis labels unified to 全向 / 仅横向 / 仅竖向.
+- versionCode 9 / versionName 0.1.8.
+
 ## [0.1.7] - 2026-11-02
 
 ### Changed

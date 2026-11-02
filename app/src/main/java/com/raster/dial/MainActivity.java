@@ -17,6 +17,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,6 +30,7 @@ public class MainActivity extends Activity {
     private TextView groupMeta;
     private TextView groupEdit;
     private LinearLayout segmentedHost;
+    private LinearLayout axisHost;
 
     private static final float[] SENS = {0.24f, 0.35f, 0.52f};
     private static final String[] SENS_LABEL = {"高 14°", "中 20°", "低 30°"};
@@ -42,10 +44,21 @@ public class MainActivity extends Activity {
         setContentView(buildContent());
     }
 
+    private boolean rebuilding;
+    private ScrollView scrollRef;
+
+    /** 原地换色：重建视图但不重播入场动画，并保持滚动位置（切主题用）。 */
     private void rebuild() {
+        int y = scrollRef == null ? 0 : scrollRef.getScrollY();
+        rebuilding = true;
         getWindow().setStatusBarColor(Ui.BG);
         getWindow().setNavigationBarColor(Ui.BG);
         setContentView(buildContent());
+        rebuilding = false;
+        final ScrollView sc = scrollRef;
+        if (sc != null) {
+            sc.post(() -> sc.scrollTo(0, y));
+        }
     }
 
     private ScrollView buildContent() {
@@ -156,6 +169,26 @@ public class MainActivity extends Activity {
         effect.addView(segmentedHost);
         buildSegmented();
 
+        // 过渡方式：过渡线 / 百叶窗 / 类OriginOS
+        LinearLayout styleHost = new LinearLayout(this);
+        styleHost.setOrientation(LinearLayout.VERTICAL);
+        styleHost.setPadding(0, Ui.dp(this, 10), 0, 0);
+        effect.addView(styleHost);
+        styleHost.addView(Ui.segmented(this,
+                new String[]{"过渡线", "百叶窗", "类 OriginOS"},
+                styleIndex(), i -> {
+                    getSharedPreferences("lock", MODE_PRIVATE)
+                            .edit().putInt("style", i).apply();
+                    buildAxis();
+                }));
+
+        // 变化轴：过渡线 = 全向/仅X/仅Y；百叶窗与类OriginOS = 横向/竖向
+        axisHost = new LinearLayout(this);
+        axisHost.setOrientation(LinearLayout.VERTICAL);
+        axisHost.setPadding(0, Ui.dp(this, 8), 0, 0);
+        effect.addView(axisHost);
+        buildAxis();
+
         switchRow(effect, "壁纸调试信息",
                 getSharedPreferences("lock", MODE_PRIVATE).getBoolean("wall_debug", true),
                 (b, checked) -> getSharedPreferences("lock", MODE_PRIVATE)
@@ -164,6 +197,45 @@ public class MainActivity extends Activity {
                 getSharedPreferences("lock", MODE_PRIVATE).getBoolean("invert", false),
                 (b, checked) -> getSharedPreferences("lock", MODE_PRIVATE)
                         .edit().putBoolean("invert", checked).apply());
+        // 护眼强度：常驻低透光衰减（0% = 关闭），减弱切换闪烁
+        LinearLayout eyeRow = new LinearLayout(this);
+        eyeRow.setOrientation(LinearLayout.VERTICAL);
+        eyeRow.setPadding(0, Ui.dp(this, 14), 0, 0);
+        TextView eyeLabel = Ui.text(this, "护眼强度（减弱切换闪烁）", 14, Ui.TEXT, false);
+        eyeRow.addView(eyeLabel);
+        SeekBar eyeBar = new SeekBar(this);
+        eyeBar.setMax(30);   // 0% .. 30%，1% 一档；0 = 关闭
+        float eyeSt = getSharedPreferences("lock", MODE_PRIVATE)
+                .getFloat("eye_care_strength", 0f);
+        eyeBar.setProgress(Math.round(eyeSt * 100f));
+        eyeBar.setProgressTintList(ColorStateList.valueOf(Ui.ACCENT));
+        eyeBar.setThumbTintList(ColorStateList.valueOf(Ui.ACCENT));
+        eyeBar.setProgressBackgroundTintList(ColorStateList.valueOf(0xFF2A2A36));
+        eyeBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar sb, int p, boolean fromUser) {
+                if (fromUser) {
+                    getSharedPreferences("lock", MODE_PRIVATE).edit()
+                            .putFloat("eye_care_strength", p / 100f).apply();
+                    // 1% 一档：每跨过一档轻震一次
+                    Ui.hapticTick(sb);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar sb) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar sb) {
+            }
+        });
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        blp.topMargin = Ui.dp(this, 4);
+        eyeRow.addView(eyeBar, blp);
+        effect.addView(eyeRow);
         root.addView(effect);
 
         // ---------- 预览 ----------
@@ -357,6 +429,36 @@ public class MainActivity extends Activity {
         Intent i = new Intent(this, GroupEditorActivity.class);
         i.putExtra(GroupEditorActivity.EXTRA_GROUP_ID, id);
         startActivity(i);
+    }
+
+    private void buildAxis() {
+        axisHost.removeAllViews();
+        if (styleIndex() == 0) {
+            axisHost.addView(Ui.segmented(this,
+                    new String[]{"全向", "仅横向", "仅竖向"},
+                    axisLineIndex(), i -> getSharedPreferences("lock", MODE_PRIVATE)
+                            .edit().putInt("axis_line", i).apply()));
+        } else {
+            axisHost.addView(Ui.segmented(this,
+                    new String[]{"横向", "竖向"},
+                    axisHIndex(), i -> getSharedPreferences("lock", MODE_PRIVATE)
+                            .edit().putInt("axis_h", i).apply()));
+        }
+    }
+
+    private int axisLineIndex() {
+        return Math.max(0, Math.min(2,
+                getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_line", 0)));
+    }
+
+    private int axisHIndex() {
+        return Math.max(0, Math.min(1,
+                getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_h", 0)));
+    }
+
+    private int styleIndex() {
+        return Math.max(0, Math.min(2,
+                getSharedPreferences("lock", MODE_PRIVATE).getInt("style", 0)));
     }
 
     private int sensIndex() {

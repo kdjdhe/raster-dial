@@ -79,6 +79,11 @@ public class LenticularActivity extends Activity {
         String groupId = GroupCatalog.currentId(this);
         GroupCatalog.Group group = GroupCatalog.find(this, groupId);
         view = new LenticularView(this, group.id);
+        view.setStyle(getSharedPreferences("lock", MODE_PRIVATE).getInt("style", 0));
+        view.setAxis(getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_line", 0),
+                getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_h", 0));
+        view.setEyeStrength(getSharedPreferences("lock", MODE_PRIVATE)
+                .getFloat("eye_care_strength", 0f));
         root.addView(view, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
@@ -180,11 +185,13 @@ public class LenticularActivity extends Activity {
         if (fixed) {
             float p = intent.getFloatExtra("progress", 0f);
             float a = intent.getFloatExtra("angle", 0f);
-            view.setState(p, (float) Math.cos(a), (float) Math.sin(a));
+            view.setState(p, p, p, p * 0.7f, p * 0.7f,
+                    (float) Math.cos(a), (float) Math.sin(a));
             hint.setText(String.format(Locale.US,
                     "固定预览 phase=%.2f  ·  点 × 退出", p));
         } else {
-            tracker = new TiltTracker(this, (progress, dx, dy) -> view.setState(progress, dx, dy));
+            tracker = new TiltTracker(this, t -> view.setState(t.phase, t.phaseX,
+                    t.phaseY, t.hx, t.hy, t.dirX, t.dirY));
             tracker.setInvert(invert);
             boolean land = getResources().getConfiguration().orientation
                     == Configuration.ORIENTATION_LANDSCAPE;

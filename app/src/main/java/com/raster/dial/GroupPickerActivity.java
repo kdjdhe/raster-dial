@@ -2,6 +2,7 @@ package com.raster.dial;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -28,6 +29,7 @@ import android.widget.Toast;
 
 import org.json.JSONArray;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,7 +55,11 @@ public class GroupPickerActivity extends Activity {
     private LinearLayout cardsContainer;
     private EditText searchInput;
     private TextView importBtn;
+    private TextView shareBtn;
+    private TextView caption;
     private TextView tip;
+    private LinearLayout shareActions;
+    private TextView shareGo;
 
     private List<GroupCatalog.Group> groups = new ArrayList<>();  // 全量（排序后）
     private final List<LinearLayout> gridCards = new ArrayList<>(); // 与 groups 平行
@@ -61,6 +67,10 @@ public class GroupPickerActivity extends Activity {
     private String query = "";
     private int cardIndex;
     private int gridCols = 2;   // 平板宽屏 3 列，其余 2 列
+
+    // ---------- 多选分享状态 ----------
+    private boolean shareMode;
+    private final java.util.Set<String> shareSel = new java.util.LinkedHashSet<>();
 
     // ---------- 拖拽状态（单卡持有，gesture 内闭环） ----------
     private boolean dragLifted;
@@ -119,7 +129,7 @@ public class GroupPickerActivity extends Activity {
         title.setPadding(0, Ui.dp(this, 12), 0, 0);
         head.addView(title);
 
-        TextView caption = Ui.callout(this,
+        caption = Ui.callout(this,
                 "点卡片切换；长按拖动排序；自定义组可编辑、删除。");
         caption.setPadding(0, Ui.dp(this, 4), 0, 0);
         head.addView(caption);
@@ -174,6 +184,29 @@ public class GroupPickerActivity extends Activity {
             startImport();
         });
         searchRow.addView(importBtn, ilp);
+
+        shareBtn = Ui.chip(this, "分享", false);
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        slp.leftMargin = Ui.dp(this, 8);
+        shareBtn.setOnClickListener(v -> {
+            Ui.haptic(v);
+            enterShare();
+        });
+        searchRow.addView(shareBtn, slp);
+
+        // 多选分享的操作行（默认隐藏）
+        shareActions = new LinearLayout(this);
+        shareActions.setOrientation(LinearLayout.HORIZONTAL);
+        shareActions.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams salp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        salp.topMargin = Ui.dp(this, 10);
+        shareActions.setVisibility(View.GONE);
+        root.addView(shareActions, salp);
+        buildShareActions();
 
         cardsContainer = new LinearLayout(this);
         cardsContainer.setOrientation(LinearLayout.VERTICAL);
@@ -309,7 +342,7 @@ public class GroupPickerActivity extends Activity {
                 if (j < shown.size()) {
                     GroupCatalog.Group g = shown.get(j);
                     LinearLayout card = groupCard(g, current);
-                    if (!filtered) {
+                    if (!filtered && !shareMode) {
                         // tag = 卡片在 groups 里的槽位；排序几何依赖它
                         card.setTag(gridCards.size());
                         card.setOnTouchListener(new CardGesture(card, g));
@@ -338,13 +371,18 @@ public class GroupPickerActivity extends Activity {
         }
     }
 
-    private void applyCardBg(LinearLayout card, GroupCatalog.Group g, boolean lifted) {
-        boolean sel = !lifted && g.id.equals(GroupCatalog.currentId(this));
+    /** 当前选中的判定：普通模式 = 当前组；分享模式 = 已勾选。 */
+    private boolean isSelected(GroupCatalog.Group g) {
+        return shareMode ? shareSel.contains(g.id)
+                : g.id.equals(GroupCatalog.currentId(this));
+    }
+
+    private void applyCardBg(LinearLayout card, boolean selected, boolean lifted) {
         GradientDrawable bg;
         if (lifted) {
             bg = Ui.surface(this, Ui.CARD_HI, 20);
             bg.setStroke(Ui.dp(this, 2), Ui.ACCENT);
-        } else if (sel) {
+        } else if (selected) {
             bg = Ui.round(this, Ui.ACCENT_DIM, 20);
             bg.setStroke(Ui.dp(this, 2), Ui.ACCENT);
         } else {
@@ -355,12 +393,20 @@ public class GroupPickerActivity extends Activity {
     }
 
     private LinearLayout groupCard(GroupCatalog.Group g, String current) {
-        boolean selected = g.id.equals(current);
+        boolean selected;
+        boolean showCurrent;
+        if (shareMode) {
+            selected = shareSel.contains(g.id);
+            showCurrent = false;
+        } else {
+            selected = g.id.equals(current);
+            showCurrent = true;
+        }
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(Ui.dp(this, 8), Ui.dp(this, 8),
                 Ui.dp(this, 8), Ui.dp(this, 12));
-        applyCardBg(card, g, false);
+        applyCardBg(card, selected, false);
         card.setClickable(true);
         card.setFocusable(true);
         card.setClipChildren(true);
@@ -416,7 +462,7 @@ public class GroupPickerActivity extends Activity {
         TextView meta = Ui.text(this,
                 (g.custom ? "自定义" : "内置") + " · "
                         + (g.count == 0 ? "空" : g.count + " 张")
-                        + (selected ? " · 当前" : ""),
+                        + (selected ? (shareMode ? " · 已选" : " · 当前") : ""),
                 11, selected ? Ui.ACCENT : Ui.TERTIARY, false);
         meta.setPadding(Ui.dp(this, 6), Ui.dp(this, 3), 0, 0);
         card.addView(meta);
@@ -436,9 +482,164 @@ public class GroupPickerActivity extends Activity {
 
         card.setOnClickListener(v -> {
             Ui.haptic(v);
+            if (shareMode) {
+                if (!g.custom || g.count == 0) {
+                    return;   // 内置组/空组不可导出
+                }
+                if (shareSel.contains(g.id)) {
+                    shareSel.remove(g.id);
+                } else {
+                    shareSel.add(g.id);
+                }
+                updateShareGo();
+                renderGroups(false);
+                return;
+            }
             onPick(g);
         });
         return card;
+    }
+
+    // ---------- 多选分享 ----------
+    private void buildShareActions() {
+        shareGo = Ui.button(this, "打包分享", true);
+        shareGo.setOnClickListener(v -> {
+            Ui.haptic(v);
+            packSelected();
+        });
+        shareActions.addView(shareGo, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView all = Ui.button(this, "全选", false);
+        all.setOnClickListener(v -> {
+            Ui.haptic(v);
+            int selectable = 0;
+            for (GroupCatalog.Group g : groups) {
+                if (g.custom && g.count > 0) {
+                    selectable++;
+                }
+            }
+            if (shareSel.size() >= selectable) {
+                shareSel.clear();
+            } else {
+                for (GroupCatalog.Group g : groups) {
+                    if (g.custom && g.count > 0) {
+                        shareSel.add(g.id);
+                    }
+                }
+            }
+            updateShareGo();
+            renderGroups(false);
+        });
+        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        alp.leftMargin = Ui.dp(this, 8);
+        shareActions.addView(all, alp);
+
+        TextView cancel = Ui.button(this, "取消", false);
+        cancel.setOnClickListener(v -> {
+            Ui.haptic(v);
+            exitShare();
+        });
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        clp.leftMargin = Ui.dp(this, 8);
+        shareActions.addView(cancel, clp);
+        updateShareGo();
+    }
+
+    private void updateShareGo() {
+        if (shareGo == null) {
+            return;
+        }
+        shareGo.setText(shareSel.isEmpty() ? "打包分享" : "打包分享(" + shareSel.size() + ")");
+    }
+
+    private void enterShare() {
+        if (shareMode) {
+            return;
+        }
+        shareMode = true;
+        shareSel.clear();
+        caption.setText("点选要分享的自定义组（内置组不支持导出）。");
+        importBtn.setEnabled(false);
+        importBtn.setAlpha(0.35f);
+        shareBtn.setEnabled(false);
+        shareBtn.setAlpha(0.35f);
+        shareActions.setVisibility(View.VISIBLE);
+        tip.setText("打包成一个 zip 发给对方；对方在「导入」里选择即可。");
+        renderGroups(false);
+    }
+
+    private void exitShare() {
+        if (!shareMode) {
+            return;
+        }
+        shareMode = false;
+        shareSel.clear();
+        caption.setText("点卡片切换；长按拖动排序；自定义组可编辑、删除。");
+        importBtn.setEnabled(true);
+        importBtn.setAlpha(1f);
+        shareBtn.setEnabled(true);
+        shareBtn.setAlpha(1f);
+        shareActions.setVisibility(View.GONE);
+        tip.setText("自定义组最多 6 张；至少 1 张才能设为当前组。\n按住卡片约半秒拿起后拖动排序。");
+        renderGroups(false);
+    }
+
+    private void packSelected() {
+        if (shareSel.isEmpty()) {
+            Toast.makeText(this, "先点选至少一个自定义组", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<CustomStore.CustomGroup> gs = new ArrayList<>();
+        for (GroupCatalog.Group g : groups) {
+            if (shareSel.contains(g.id)) {
+                CustomStore.CustomGroup cg = CustomStore.find(this, g.id);
+                if (cg != null && cg.count() > 0) {
+                    gs.add(cg);
+                }
+            }
+        }
+        if (gs.isEmpty()) {
+            Toast.makeText(this, "选中的组都还没有图片", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        shareGo.setEnabled(false);
+        shareGo.setText("打包中…");
+        final int n = gs.size();
+        new Thread(() -> {
+            try {
+                File exports = new File(getFilesDir(), "exports");
+                //noinspection ResultOfMethodCallIgnored
+                exports.mkdirs();
+                File out = new File(exports, "raster-groups.zip");
+                GroupImporter.writeBundle(this, gs, out);
+                runOnUiThread(() -> {
+                    shareGo.setEnabled(true);
+                    updateShareGo();
+                    Uri uri = Uri.parse("content://" + getPackageName() + ".export/"
+                            + out.getName());
+                    Intent send = new Intent(Intent.ACTION_SEND);
+                    send.setType("application/zip");
+                    send.putExtra(Intent.EXTRA_STREAM, uri);
+                    send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    Intent chooser = Intent.createChooser(send, "分享 " + n + " 个光栅组");
+                    chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    chooser.setClipData(ClipData.newRawUri("groups", uri));
+                    chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(chooser);
+                    exitShare();
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    shareGo.setEnabled(true);
+                    updateShareGo();
+                    Toast.makeText(this, "打包失败：" + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
     }
 
     /** 虚线边框“＋ 新建组”卡片。 */
@@ -612,7 +813,7 @@ public class GroupPickerActivity extends Activity {
         }
 
         private void lift() {
-            if (lifted || dragLifted) {
+            if (lifted || dragLifted || shareMode) {
                 return;
             }
             if (!query.isEmpty()) {
@@ -631,7 +832,7 @@ public class GroupPickerActivity extends Activity {
             orderChanged = false;
             Ui.hapticLong(card);
             measureGrid();
-            applyCardBg(card, group, true);
+            applyCardBg(card, false, true);
             // 拖拽影子：快照挂到 Activity 顶层浮层，保证任何情况下都在最上层。
             // 原卡整卡透明（alpha 不影响触摸分发，手势不断）——画面上只有影子
             // 这一个视觉体，避免双层描边；空出的槽位即落点提示
@@ -645,7 +846,7 @@ public class GroupPickerActivity extends Activity {
         private void drop() {
             dragLifted = false;
             lifted = false;
-            applyCardBg(card, group, false);
+            applyCardBg(card, isSelected(group), false);
             Ui.alpha(card, 1f);   // 原卡淡回（影子淡出、网格重排的衔接）
             // 影子弹簧到目标槽位并淡出
             if (dragGhost != null && dragOverlay != null) {
@@ -740,7 +941,10 @@ public class GroupPickerActivity extends Activity {
                         return true;
                     }
                     Ui.springScale(card, 1f);
-                    return false; // 轻点：交给 click（切换组）
+                    // 手势消费了 DOWN，View 没进 pressed 态，框架不会自动分发 click；
+                    // 轻点在此手动补发（仍是切换组 / 分享多选）
+                    card.performClick();
+                    return true;
                 case MotionEvent.ACTION_CANCEL:
                     cancelLift();
                     if (lifted) {
@@ -776,28 +980,32 @@ public class GroupPickerActivity extends Activity {
         Toast.makeText(this, "导入中…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
-                GroupImporter.Parsed p = GroupImporter.read(getContentResolver(), uri);
-                // 名称冲突：追加序号重试
-                CustomStore.CustomGroup g = null;
-                String chosen = p.name;
-                for (int k = 1; g == null && k <= 50; k++) {
-                    final String candidate = k == 1 ? p.name : p.name + " " + k;
-                    g = CustomStore.create(this, candidate);
-                    if (g != null) {
-                        chosen = candidate;
+                List<GroupImporter.Parsed> parsed =
+                        GroupImporter.readAll(getContentResolver(), uri);
+                int imported = 0;
+                for (GroupImporter.Parsed p : parsed) {
+                    // 名称冲突：追加序号重试
+                    CustomStore.CustomGroup g = null;
+                    String chosen = p.name;
+                    for (int k = 1; g == null && k <= 50; k++) {
+                        final String candidate = k == 1 ? p.name : p.name + " " + k;
+                        g = CustomStore.create(this, candidate);
+                        if (g != null) {
+                            chosen = candidate;
+                        }
                     }
+                    if (g == null) {
+                        throw new Exception("无法创建「" + p.name + "」（名称冲突）");
+                    }
+                    for (int idx = 0; idx < p.rotations.length; idx++) {
+                        CustomStore.importBytes(this, g, p.images.get(idx), p.rotations[idx]);
+                    }
+                    CustomStore.saveGroupSlots(this, g);
+                    imported++;
                 }
-                if (g == null) {
-                    throw new Exception("无法创建组（名称冲突）");
-                }
-                for (int idx = 0; idx < p.rotations.length; idx++) {
-                    CustomStore.importBytes(this, g, p.images.get(idx), p.rotations[idx]);
-                }
-                CustomStore.saveGroupSlots(this, g);
-                final String importedName = chosen;
+                final int n = imported;
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "已导入「" + importedName + "」（"
-                                    + p.rotations.length + " 张）",
+                    Toast.makeText(this, "已导入 " + n + " 个光栅组",
                             Toast.LENGTH_LONG).show();
                     groups = ordered(GroupCatalog.load(this));
                     renderGroups();

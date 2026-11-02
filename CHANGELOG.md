@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.6] - 2026-11-02
+
+### Fixed
+
+- Group switching was dead in the picker: the drag gesture consumed ACTION_DOWN, so the
+  card never entered the pressed state and the framework never dispatched the click.
+  Tap-to-switch now calls performClick() explicitly on the tap branch.
+- Share mode: the selection ring/badge now follow the share selection instead of the
+  current group.
+
 ## [0.1.5] - 2026-11-01
 
 ### Added
@@ -9,6 +19,7 @@
 - Six themes (曜石 / 冰川 / 森绿 / 霞紫 / 绯红 / 鎏金) with instant switching, persisted
 - Group picker: search, long-press drag reordering (spring make-way, per-slot tick haptic)
 - Custom group export/import for sharing (zip bundle via share sheet / file picker)
+- Multi-group share: select several custom groups in the picker and pack them into one zip
 - Tablet / wide-screen adaptation: unlocked orientations, width-capped centered content,
   3-column grid on wide screens
 

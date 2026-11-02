@@ -23,8 +23,8 @@ android {
         applicationId = "com.raster.dial"
         minSdk = 28
         targetSdk = 34
-        versionCode = 6
-        versionName = "0.1.5"
+        versionCode = 7
+        versionName = "0.1.6"
         buildConfigField("String", "UPDATE_MANIFEST_PRIMARY",
             "\"https://updates.example.com/raster-dial/update.json\"")
         buildConfigField("String", "UPDATE_MANIFEST_FALLBACK",

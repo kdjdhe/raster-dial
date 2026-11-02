@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.10] - 2026-11-02
+
+### Fixed
+
+- In-app update stability:
+  - A global download guard prevents concurrent downloads (auto + manual checks could
+    previously start two threads writing the same file, corrupting it and failing
+    verification); only one download dialog is kept.
+  - The progress dialog now shows real phases: 下载中 x% / 校验中… / opening the
+    installer, instead of a frozen "准备下载…".
+  - Each source is tried twice; HTTPS timeouts raised to 10s/30s; failures report the
+    reason (network / checksum) instead of a generic message.
+  - Dismissal is cleaned up when the activity is finishing/destroyed, so a leaked
+    dialog can no longer sit on top of a later check.
+
+### Changed
+
+- versionCode 11 / versionName 0.1.10.
+
 ## [0.1.9] - 2026-11-02
 
 ### Added

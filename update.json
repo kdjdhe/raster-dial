@@ -1,13 +1,13 @@
 {
-  "versionCode": 6,
-  "versionName": "0.1.5",
+  "versionCode": 7,
+  "versionName": "0.1.6",
   "minSdk": 28,
-  "publishedAt": "2026-11-01T12:28:11Z",
-  "sha256": "023e6be1bdcc559dd79398e33b5099f2a206309bb476cfd345fe143bfd8666da",
-  "size": 8478513,
-  "notes": "0.1.5: Apple 风格 UI 全面重构，6 套主题，搜索与长按拖拽排序，多选打包分享；0.1.3 可直接覆盖更新。",
+  "publishedAt": "2026-11-02T05:38:30Z",
+  "sha256": "7d833da0f32a0a24a6138da8d12baa0cb3e5c9d4fc1a66118f9a2557684da2c6",
+  "size": 8478713,
+  "notes": "0.1.6: 修复光栅组无法点击切换的问题（本轮唯一变更，建议 0.1.5 用户立即更新）。",
   "apkUrls": [
-    "https://updates.example.com/raster-dial/raster-dial-0.1.5.apk",
-    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.5/raster-dial-0.1.5.apk"
+    "https://updates.example.com/raster-dial/raster-dial-0.1.6.apk",
+    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.6/raster-dial-0.1.6.apk"
   ]
 }

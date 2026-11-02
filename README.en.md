@@ -13,10 +13,13 @@ A lenticular live wallpaper for Android 9+: tilt the phone and the image transit
 
 ## Features
 
-- **Single soft gradient boundary**: one ~18% screen-width gradient band between A and B, not a stripe or a hard cut.
+- **Gradient line (default)**: one ~18% screen-width soft gradient band between A and B, not a stripe or a hard cut.
 - **2D direction**: left/right, up/down, and diagonal tilts all work; the boundary follows the tilt direction.
 - **Cycling**: `phase` is unbounded; 2–3 images cycle as `1→2→3→1`.
 - **Debouncing**: One Euro Filter + soft dead zone + direction dead zone + a 3 cycles/s phase limit; the half-range angle is multiplied by 1.2 on tablets/landscape.
+- **Three transition styles**: gradient line / Venetian blinds (百叶窗: six strips with synchronized boundaries, strips rotate with the axis) / OriginOS-like (类OriginOS: one wide soft gradient sweeping across; instantaneous tilt-to-scene mapping with fixed 100ms committed switches, no intermediate states).
+- **Configurable axis**: gradient line 全向 / 仅横向 / 仅竖向; blinds and OriginOS-like 横向 / 竖向.
+- **Eye-care strength**: 0–30% persistent luminance attenuation (leftmost = off) that reduces switch flashing; haptic tick per step.
 - **5 built-in demo groups + custom**: Yixuan, Pyrois, Miyabi, Vivian, Ye Shunguang.
 - **Multiple custom groups**: create, name/rename, delete; 1–6 images per group with pick, rotate 90°, reorder, and delete.
 - **Tablets/foldables**: the runtime surface aspect ratio selects portrait/landscape assets; aspect-fill cropping; display-rotation compensation.
@@ -153,7 +156,7 @@ The same code covers 20:9 phones, 19.5:9, 21:9, 16:10 tablets, and folded/unfold
 python tools/build_groups.py     # rebuild portrait assets + groups.json
 python tools/build_landscape.py  # rebuild landscape assets
 python tools/publish_update.py --chengdu-base https://updates.example.com/raster-dial
-CHENGDU_HOST=user@host tools/sync_chengdu.sh work/raster-dial-0.1.2-debug.apk
+CHENGDU_HOST=root@<server-ip> CHENGDU_KEY=~/.ssh/your-deploy-key tools/sync_chengdu.sh work/raster-dial-0.1.8.apk
 ```
 
 Asset generation reads the repository's `art` directory by default; you can also point `RASTER_SRC` at your source-art directory:

@@ -219,6 +219,10 @@ gradle test             # 本机安装 Gradle 9.7.1 时等价
 
 规律：HyperOS / OriginOS 这类把动态壁纸接进 keyguard 的系统会开放锁屏入口；EMUI / HarmonyOS / MagicOS 的锁屏壁纸走自家静态图体系，动态壁纸设不进去。
 
+> **欢迎参与真机适配测试**：装好后在你的设备上尝试设为动态壁纸（以及锁屏，如果系统提供该选项），
+> 把「设备型号 / 系统与版本 / Android 版本 / 能否设为锁屏 / 实测表现」发到
+> [GitHub Issues](https://github.com/kdjdhe/raster-dial/issues)，会汇总进上表，帮助更多机型确认可用性。
+
 ## 已知限制与路线图
 
 - 只做**桌面动态壁纸**；能否设到锁屏由厂商 keyguard 实现决定，真机实测见[锁屏壁纸实测](#锁屏壁纸实测)。

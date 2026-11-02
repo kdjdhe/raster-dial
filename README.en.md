@@ -219,6 +219,11 @@ The app does not implement a lock screen itself. Whether the system live-wallpap
 
 Pattern: HyperOS / OriginOS integrate live wallpapers into the keyguard and expose the lock-screen entry; EMUI / HarmonyOS / MagicOS lock-screen wallpapers go through their own static pipelines.
 
+> **Please help test on your device**: install the app, try setting the live wallpaper (and the
+> lock screen where the system offers it), and submit device model / OS and version / Android
+> version / whether the lock screen is settable / observed behavior via
+> [GitHub Issues](https://github.com/kdjdhe/raster-dial/issues). Results will be added to the table.
+
 ## Known Limitations and Roadmap
 
 - **Home-screen live wallpaper by design**; whether it can also be set as the lock-screen wallpaper depends on the vendor's keyguard implementation — see [Tested Lock-Screen Support](#tested-lock-screen-support).

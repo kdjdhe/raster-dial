@@ -1,13 +1,13 @@
 {
-  "versionCode": 10,
-  "versionName": "0.1.9",
+  "versionCode": 11,
+  "versionName": "0.1.10",
   "minSdk": 28,
-  "publishedAt": "2026-11-02T14:34:52Z",
-  "sha256": "06ef7476d8b7de54ccb3eee41ed76b6b0961ad50b51b7604a2f79d59683793ff",
-  "size": 8494521,
-  "notes": "0.1.9: 新增设置页（主题/更新/调试/壁纸/开源）、震动反馈开关、滚动到边缘轻震；主屏精简，预览适配三种过渡方式。",
+  "publishedAt": "2026-11-02T14:50:27Z",
+  "sha256": "4fc2c47672c328527f6cf765dd6502c45b14b31dd49c981856c24a91e350bc77",
+  "size": 8495717,
+  "notes": "0.1.10: 修复应用内更新（并发下载互斥、真实进度与阶段、双源各两次尝试、失败原因提示）；建议 0.1.9 用户更新。",
   "apkUrls": [
-    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.9.apk",
-    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.9/raster-dial-0.1.9.apk"
+    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.10.apk",
+    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.10/raster-dial-0.1.10.apk"
   ]
 }

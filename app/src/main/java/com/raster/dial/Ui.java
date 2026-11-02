@@ -9,6 +9,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
+import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -81,6 +82,12 @@ public final class Ui {
     public static final int HAIRLINE = 0x14FFFFFF;
     public static final int RIPPLE = 0x2AFFFFFF;
     public static int themeIndex = 0;
+    /** 全局触觉开关（设置页“震动反馈”）。 */
+    public static boolean haptics = true;
+
+    public static void setHaptics(boolean v) {
+        haptics = v;
+    }
 
     /** 应用并持久化主题；切换后需重建界面（或重进）以刷新所有已建视图。 */
     public static void applyTheme(Context c, int idx) {
@@ -101,10 +108,12 @@ public final class Ui {
                 .edit().putInt("theme", themeIndex).apply();
     }
 
-    /** 从偏好恢复主题（各 Activity onCreate 时调用）。 */
+    /** 从偏好恢复主题与触觉开关（各 Activity onCreate 时调用）。 */
     public static void loadTheme(Context c) {
-        int idx = c.getSharedPreferences("lock", Context.MODE_PRIVATE).getInt("theme", 0);
-        applyTheme(c, idx);
+        android.content.SharedPreferences sp =
+                c.getSharedPreferences("lock", Context.MODE_PRIVATE);
+        applyTheme(c, sp.getInt("theme", 0));
+        haptics = sp.getBoolean("haptics", true);
     }
 
     public static int themeAccent(int idx) {
@@ -304,6 +313,9 @@ public final class Ui {
 
     // ---------- 触觉：提交类动作调用 ----------
     public static void haptic(View v) {
+        if (!haptics) {
+            return;
+        }
         int id = Build.VERSION.SDK_INT >= 30
                 ? HapticFeedbackConstants.CONFIRM
                 : HapticFeedbackConstants.VIRTUAL_KEY;
@@ -312,11 +324,17 @@ public final class Ui {
 
     /** 轻 tick：拖动跨越卡位等细粒度反馈。 */
     public static void hapticTick(View v) {
+        if (!haptics) {
+            return;
+        }
         v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
     }
 
     /** 长震：长按进入某状态（如排序）。 */
     public static void hapticLong(View v) {
+        if (!haptics) {
+            return;
+        }
         v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
     }
 
@@ -542,6 +560,34 @@ public final class Ui {
             });
         }
         return seg;
+    }
+
+    /**
+     * ScrollView 滑到顶/底时轻震一次（快速滑到头“停住”的反馈）。
+     * 只在从非边缘进入边缘时触发，带 350ms 冷却，避免连续事件重复震。
+     */
+    public static void attachEdgeTick(ScrollView sv) {
+        final boolean[] atTop = {true};
+        final boolean[] atBottom = {false};
+        final long[] lastTs = {0};
+        sv.setOnScrollChangeListener((v, x, y, ox, oy) -> {
+            android.view.View child = sv.getChildAt(0);
+            if (child == null) {
+                return;
+            }
+            int max = Math.max(0, child.getHeight() - sv.getHeight());
+            boolean top = y <= 0;
+            boolean bottom = y >= max - 2;
+            long now = SystemClock.uptimeMillis();
+            if ((bottom && !atBottom[0]) || (top && !atTop[0])) {
+                if (now - lastTs[0] > 350) {
+                    lastTs[0] = now;
+                    hapticTick(sv);
+                }
+            }
+            atTop[0] = top;
+            atBottom[0] = bottom;
+        });
     }
 
     // ---------- 布局小工具 ----------

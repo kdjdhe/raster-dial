@@ -63,6 +63,7 @@ public class GroupEditorActivity extends Activity {
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        Ui.attachEdgeTick(scroll);
         scroll.setBackground(new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{Ui.BG, Ui.BG2}));

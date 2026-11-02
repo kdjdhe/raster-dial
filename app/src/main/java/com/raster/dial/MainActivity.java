@@ -46,6 +46,7 @@ public class MainActivity extends Activity {
 
     private boolean rebuilding;
     private ScrollView scrollRef;
+    private int builtTheme;
 
     /** 原地换色：重建视图但不重播入场动画，并保持滚动位置（切主题用）。 */
     private void rebuild() {
@@ -62,8 +63,10 @@ public class MainActivity extends Activity {
     }
 
     private ScrollView buildContent() {
+        builtTheme = Ui.themeIndex;
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        Ui.attachEdgeTick(scroll);
         scroll.setBackground(new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{Ui.BG, Ui.BG2}));
@@ -73,7 +76,10 @@ public class MainActivity extends Activity {
         root.setPadding(Ui.dp(this, 20), Ui.dp(this, 24),
                 Ui.dp(this, 20), Ui.dp(this, 36));
 
-        // ---------- 大标题 ----------
+        // ---------- 大标题 + 设置入口 ----------
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        titleRow.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout titleBlock = new LinearLayout(this);
         titleBlock.setOrientation(LinearLayout.VERTICAL);
         TextView t = Ui.largeTitle(this, "Raster Dial");
@@ -81,7 +87,28 @@ public class MainActivity extends Activity {
         TextView sub = Ui.callout(this, "光栅动态壁纸 · 倾斜切换画面");
         sub.setPadding(0, Ui.dp(this, 4), 0, 0);
         titleBlock.addView(sub);
-        root.addView(titleBlock);
+        titleRow.addView(titleBlock, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView settingsBtn = new TextView(this);
+        settingsBtn.setText("⚙");
+        settingsBtn.setTextSize(18);
+        settingsBtn.setTextColor(Ui.TEXT);
+        settingsBtn.setGravity(Gravity.CENTER);
+        int gb = Ui.dp(this, 40);
+        settingsBtn.setBackground(Ui.ripple(this, Ui.CARD_HI, 999));
+        settingsBtn.setClickable(true);
+        settingsBtn.setFocusable(true);
+        settingsBtn.setContentDescription("设置");
+        Ui.pressable(settingsBtn);
+        settingsBtn.setOnClickListener(v -> {
+            Ui.haptic(v);
+            startActivity(new Intent(this, SettingsActivity.class));
+        });
+        LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(gb, gb);
+        glp.leftMargin = Ui.dp(this, 8);
+        titleRow.addView(settingsBtn, glp);
+        root.addView(titleRow);
 
         // ---------- 当前组 hero 卡 ----------
         LinearLayout hero = Ui.card(this);
@@ -189,10 +216,6 @@ public class MainActivity extends Activity {
         effect.addView(axisHost);
         buildAxis();
 
-        switchRow(effect, "壁纸调试信息",
-                getSharedPreferences("lock", MODE_PRIVATE).getBoolean("wall_debug", true),
-                (b, checked) -> getSharedPreferences("lock", MODE_PRIVATE)
-                        .edit().putBoolean("wall_debug", checked).apply());
         switchRow(effect, "反向扫过（切图侧互换）",
                 getSharedPreferences("lock", MODE_PRIVATE).getBoolean("invert", false),
                 (b, checked) -> getSharedPreferences("lock", MODE_PRIVATE)
@@ -275,62 +298,9 @@ public class MainActivity extends Activity {
         Ui.addWithTop(wall, set, this, 12);
         root.addView(wall);
 
-        // ---------- 主题 ----------
-        LinearLayout themeCard = Ui.card(this);
-        themeCard.addView(Ui.overline(this, "主题"));
-        android.widget.HorizontalScrollView tHsv = new android.widget.HorizontalScrollView(this);
-        tHsv.setHorizontalScrollBarEnabled(false);
-        tHsv.setClipToPadding(false);
-        LinearLayout tRow = new LinearLayout(this);
-        tRow.setOrientation(LinearLayout.HORIZONTAL);
-        tRow.setPadding(0, Ui.dp(this, 12), 0, Ui.dp(this, 2));
-        for (int i = 0; i < Ui.THEME_NAMES.length; i++) {
-            final int idx = i;
-            FrameLayout sw = new FrameLayout(this);
-            GradientDrawable ring = Ui.round(this, Ui.themeBg(idx), 999);
-            ring.setStroke(Ui.dp(this, idx == Ui.themeIndex ? 2 : 1),
-                    idx == Ui.themeIndex ? Ui.ACCENT : Ui.HAIRLINE);
-            sw.setBackground(ring);
-            View dot = new View(this);
-            int ds = Ui.dp(this, 16);
-            dot.setBackground(Ui.round(this, Ui.themeAccent(idx), 999));
-            sw.addView(dot, new FrameLayout.LayoutParams(ds, ds, Gravity.CENTER));
-            LinearLayout.LayoutParams swlp = new LinearLayout.LayoutParams(
-                    Ui.dp(this, 44), Ui.dp(this, 44));
-            swlp.rightMargin = Ui.dp(this, 10);
-            sw.setClickable(true);
-            sw.setFocusable(true);
-            sw.setContentDescription(Ui.THEME_NAMES[i]);
-            Ui.pressable(sw);
-            sw.setOnClickListener(v -> {
-                if (idx == Ui.themeIndex) {
-                    return;
-                }
-                Ui.haptic(v);
-                Ui.applyTheme(this, idx);
-                rebuild();
-            });
-            tRow.addView(sw, swlp);
-        }
-        tHsv.addView(tRow);
-        Ui.addWithTop(themeCard, tHsv, this, 12);
-        root.addView(themeCard);
 
-        // ---------- 设置式分组列表 ----------
-        LinearLayout tools = Ui.group(this);
-        Ui.groupRow(tools, row(tools, "检查更新", null, false, v ->
-                UpdateChecker.check(this, true)), this);
-        Ui.groupRow(tools, row(tools, "清除调试覆盖", "回到传感器", false, v ->
-                clearDebugOverride()), this);
-        Ui.groupRow(tools, row(tools, "恢复系统默认壁纸", null, false, v ->
-                confirmClearWallpaper()), this);
-        root.addView(tools);
 
-        TextView note = Ui.footnote(this,
-                "只改桌面壁纸，不接管锁屏；不会拦截触摸。\n"
-                        + "调试行显示组名 / 横竖 / 旋转 / phase / 段内进度 / 方向 / 帧耗时。");
-        note.setPadding(0, Ui.dp(this, 16), 0, 0);
-        root.addView(note);
+
 
         updateGroupCard();
         Ui.adaptWide(this, scroll, root);
@@ -340,9 +310,6 @@ public class MainActivity extends Activity {
         Ui.appear(effect, 60);
         Ui.appear(preview, 120);
         Ui.appear(wall, 180);
-        Ui.appear(themeCard, 240);
-        Ui.appear(tools, 300);
-        Ui.appear(note, 340);
         return scroll;
     }
 
@@ -351,16 +318,6 @@ public class MainActivity extends Activity {
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         lp.leftMargin = Ui.dp(this, index == 0 ? 0 : 8);
         return lp;
-    }
-
-    private LinearLayout row(LinearLayout group, String title, String tail,
-                             boolean danger, View.OnClickListener l) {
-        LinearLayout r = Ui.listRow(this, title, tail, danger);
-        r.setOnClickListener(v -> {
-            Ui.haptic(v);
-            l.onClick(v);
-        });
-        return r;
     }
 
     private void buildSegmented() {
@@ -493,35 +450,15 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void clearDebugOverride() {
-        getSharedPreferences("lock", MODE_PRIVATE).edit()
-                .remove("wall_progress")
-                .remove("wall_dir_x")
-                .remove("wall_dir_y")
-                .apply();
-        Toast.makeText(this, "已清除调试覆盖", Toast.LENGTH_SHORT).show();
-    }
-
-    private void confirmClearWallpaper() {
-        new AlertDialog.Builder(this)
-                .setMessage("清除当前动态壁纸，恢复系统默认静态壁纸？")
-                .setPositiveButton("清除", (d, w) -> {
-                    try {
-                        WallpaperManager.getInstance(this).clear();
-                        Toast.makeText(this, "已恢复系统默认壁纸", Toast.LENGTH_SHORT).show();
-                    } catch (Exception e) {
-                        Toast.makeText(this, "失败：" + e, Toast.LENGTH_LONG).show();
-                    }
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
         UpdateChecker.autoCheck(this);
         UpdateChecker.resumePendingInstall(this);
+        if (Ui.themeIndex != builtTheme) {
+            rebuild();
+            return;
+        }
         updateGroupCard();
     }
 }

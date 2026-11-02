@@ -93,6 +93,7 @@ public class GroupPickerActivity extends Activity {
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        Ui.attachEdgeTick(scroll);
         scroll.setClipChildren(false);
         scroll.setBackground(new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,

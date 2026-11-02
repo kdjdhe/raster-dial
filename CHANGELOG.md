@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.7] - 2026-11-02
+
+### Changed
+
+- In-app update primary source switched to the Chengdu server:
+  `https://update.litanghub.top:8443/raster-dial/update.json` (direct TLS on a
+  non-standard port, Let's Encrypt certificate, DNS-only A record). GitHub raw stays
+  as the fallback. Verified end-to-end from a real device.
+- versionCode 8 / versionName 0.1.7.
+
 ## [0.1.6] - 2026-11-02
 
 ### Fixed

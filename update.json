@@ -1,13 +1,13 @@
 {
-  "versionCode": 9,
-  "versionName": "0.1.8",
+  "versionCode": 10,
+  "versionName": "0.1.9",
   "minSdk": 28,
-  "publishedAt": "2026-11-02T12:28:57Z",
-  "sha256": "b13b87a8afb59889ad85e6d73841d36f5b67fbe20b167a15669ab8e776804ec5",
-  "size": 8487453,
-  "notes": "0.1.8: 新增百叶窗与类OriginOS过渡方式、变化轴配置、护眼强度；切换更干脆跟手。",
+  "publishedAt": "2026-11-02T14:34:52Z",
+  "sha256": "06ef7476d8b7de54ccb3eee41ed76b6b0961ad50b51b7604a2f79d59683793ff",
+  "size": 8494521,
+  "notes": "0.1.9: 新增设置页（主题/更新/调试/壁纸/开源）、震动反馈开关、滚动到边缘轻震；主屏精简，预览适配三种过渡方式。",
   "apkUrls": [
-    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.8.apk",
-    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.8/raster-dial-0.1.8.apk"
+    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.9.apk",
+    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.9/raster-dial-0.1.9.apk"
   ]
 }

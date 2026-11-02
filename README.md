@@ -13,10 +13,13 @@ Android 9+ 的光栅动态壁纸：倾斜手机，画面在 2–3 张图之间�
 
 ## 功能亮点
 
-- **单条软渐变边界**：A/B 两侧之间是一条约 18% 屏宽的渐变带，不是条带，也不是硬切。
+- **过渡线式（默认）**：A/B 两侧之间是一条约 18% 屏宽的软渐变带，不是条带，也不是硬切。
 - **2D 方向**：左右、上下、斜向倾斜都连续；边界方向跟随倾斜方向。
 - **循环切换**：`phase` 不截断，2–3 张图按 `1→2→3→1` 循环。
 - **消抖**：One Euro Filter + 软死区 + 方向死区 + 3 圈/秒限速，压住手抖；平板/横屏半程角度 ×1.2。
+- **三种过渡方式**：过渡线 / 百叶窗（六条带同步边界，随轴旋转成横/竖条）/ 类OriginOS（宽软渐变横扫；瞬时倾角映射场景 + 100ms 一锤子提交，不卡中间态）。
+- **变化轴可配**：过渡线 全向 / 仅横向 / 仅竖向；百叶窗与类OriginOS 横向 / 竖向。
+- **护眼强度**：0–30% 常驻亮度衰减（左端即关闭），减弱切换闪烁；每档轻震。
 - **5 组内置示例 + 中文名**：仪玄、佩洛伊斯、星见雅、薇薇安、叶瞬光。
 - **多个自定义组**：可新建、命名/重命名、删除；每组 1–6 张，选图、旋转 90°、↑↓ 排序。
 - **平板/折叠屏**：运行时按 surface 宽高比选竖/横素材，aspect-fill 裁切，按屏幕旋转补偿方向。
@@ -153,7 +156,7 @@ adb shell am broadcast -n com.raster.dial/.WallDebugReceiver \
 python tools/build_groups.py     # 重新生成竖屏素材 + groups.json
 python tools/build_landscape.py  # 重新生成横屏素材
 python tools/publish_update.py --chengdu-base https://updates.example.com/raster-dial
-CHENGDU_HOST=user@host tools/sync_chengdu.sh work/raster-dial-0.1.2-debug.apk
+CHENGDU_HOST=root@47.108.234.67 CHENGDU_KEY=~/.ssh/id_ed25519_aliyun tools/sync_chengdu.sh work/raster-dial-0.1.8.apk
 ```
 
 素材生成默认读取仓库根目录的 `art` 目录；也可以把 `RASTER_SRC` 指向你的原图目录：

@@ -41,9 +41,12 @@ public final class UpdateChecker {
     private static final String K_LAST_CHECK = "update_last_check";
     private static final String K_PENDING = "update_pending_apk";
     private static final long DAY_MS = 24L * 60L * 60L * 1000L;
-    private static final int CONNECT_TIMEOUT_MS = 8000;
-    private static final int READ_TIMEOUT_MS = 20000;
+    private static final int CONNECT_TIMEOUT_MS = 10000;
+    private static final int READ_TIMEOUT_MS = 30000;
     private static volatile boolean checking;
+    /** 下载互斥：避免自动/手动检查并发起两个下载线程写同一个文件。 */
+    private static final AtomicBoolean downloading = new AtomicBoolean(false);
+    private static ProgressDialog activePd;
 
     private UpdateChecker() {
     }
@@ -196,9 +199,20 @@ public final class UpdateChecker {
     }
 
     private static void downloadAndInstall(Activity a, UpdateInfo info) {
+        if (!downloading.compareAndSet(false, true)) {
+            Toast.makeText(a, "正在下载更新，请稍候…", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (activePd != null) {
+            try {
+                activePd.dismiss();
+            } catch (Exception ignored) {
+            }
+        }
         ProgressDialog pd = new ProgressDialog(a);
+        activePd = pd;
         pd.setTitle("下载 " + info.versionName);
-        pd.setMessage("准备下载…");
+        pd.setMessage("正在连接…");
         pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         pd.setMax(100);
         pd.setCancelable(true);
@@ -208,37 +222,57 @@ public final class UpdateChecker {
 
         new Thread(() -> {
             File apk = null;
+            String reason = "网络不可达";
+            outer:
             for (String url : info.apkUrls) {
-                if (cancel.get()) {
-                    break;
+                for (int attempt = 1; attempt <= 2; attempt++) {
+                    if (cancel.get()) {
+                        break outer;
+                    }
+                    File got = downloadApk(a, url, info, cancel, pd);
+                    if (got == null) {
+                        reason = "下载失败";
+                        continue;
+                    }
+                    setPhase(a, pd, "校验中…");
+                    if (got.length() == info.size && info.size > 0
+                            && sha256(got).equalsIgnoreCase(info.sha256)) {
+                        apk = got;
+                        break outer;
+                    }
+                    //noinspection ResultOfMethodCallIgnored
+                    got.delete();
+                    reason = "校验不一致";
                 }
-                apk = downloadApk(a, url, info, cancel, pd);
-                if (apk == null) {
-                    continue;
-                }
-                String got = sha256(apk);
-                if (got.equalsIgnoreCase(info.sha256)) {
-                    break;
-                }
-                //noinspection ResultOfMethodCallIgnored
-                apk.delete();
-                apk = null;
             }
             final File file = apk;
+            final String failReason = reason;
             a.runOnUiThread(() -> {
+                downloading.set(false);
                 if (pd.isShowing()) {
                     pd.dismiss();
                 }
-                if (cancel.get()) {
+                activePd = null;
+                if (cancel.get() || a.isFinishing() || a.isDestroyed()) {
                     return;
                 }
                 if (file == null) {
-                    Toast.makeText(a, "下载失败或校验失败，请稍后再试", Toast.LENGTH_LONG).show();
+                    Toast.makeText(a, "更新下载失败（" + failReason + "），请稍后重试",
+                            Toast.LENGTH_LONG).show();
                     return;
                 }
+                Toast.makeText(a, "校验通过，正在打开安装器…", Toast.LENGTH_SHORT).show();
                 installApk(a, file);
             });
         }, "update-download").start();
+    }
+
+    private static void setPhase(Activity a, ProgressDialog pd, String msg) {
+        a.runOnUiThread(() -> {
+            if (pd.isShowing()) {
+                pd.setMessage(msg);
+            }
+        });
     }
 
     private static File downloadApk(Activity a, String url, UpdateInfo info,
@@ -267,10 +301,12 @@ public final class UpdateChecker {
                 total = info.size;
             }
             final long max = total;
+            setPhase(a, pd, "下载中… 0%");
             try (InputStream in = new BufferedInputStream(c.getInputStream());
                  OutputStream out = new FileOutputStream(tmp)) {
                 byte[] buf = new byte[16 * 1024];
                 long done = 0;
+                int lastPct = -1;
                 int n;
                 while ((n = in.read(buf)) > 0) {
                     if (cancel.get()) {
@@ -280,11 +316,15 @@ public final class UpdateChecker {
                     done += n;
                     if (max > 0) {
                         final int pct = (int) Math.min(100L, done * 100L / max);
-                        a.runOnUiThread(() -> {
-                            if (pd.isShowing()) {
-                                pd.setProgress(pct);
-                            }
-                        });
+                        if (pct != lastPct) {
+                            lastPct = pct;
+                            a.runOnUiThread(() -> {
+                                if (pd.isShowing()) {
+                                    pd.setProgress(pct);
+                                    pd.setMessage("下载中… " + pct + "%");
+                                }
+                            });
+                        }
                     }
                 }
             }

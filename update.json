@@ -1,13 +1,13 @@
 {
-  "versionCode": 7,
-  "versionName": "0.1.6",
+  "versionCode": 8,
+  "versionName": "0.1.7",
   "minSdk": 28,
-  "publishedAt": "2026-11-02T06:24:22Z",
-  "sha256": "7d833da0f32a0a24a6138da8d12baa0cb3e5c9d4fc1a66118f9a2557684da2c6",
-  "size": 8478713,
-  "notes": "0.1.6: 修复切组；成都主源上线（直连 8443）",
+  "publishedAt": "2026-11-02T06:33:55Z",
+  "sha256": "3c372d4862e7efe86a4812af4948ee85aec771cd1d4e37d37992488900cbe6c6",
+  "size": 8478717,
+  "notes": "0.1.7: 更新检查切换到成都主源（直连 8443，Let's Encrypt），内容同 0.1.6（含切组修复）。",
   "apkUrls": [
-    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.6.apk",
-    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.6/raster-dial-0.1.6.apk"
+    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.7.apk",
+    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.7/raster-dial-0.1.7.apk"
   ]
 }

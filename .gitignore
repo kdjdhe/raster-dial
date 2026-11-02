@@ -31,3 +31,6 @@ __pycache__/
 
 # Local lint scratch
 .readme-lint/
+
+# Local research material (videos, captures)
+real/

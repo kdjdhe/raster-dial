@@ -40,6 +40,9 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
             "uniform vec2 uDir;\n" +
             "uniform float uSoft;\n" +
             "uniform float uParallax;\n" +
+            "uniform float uStyle;\n" +
+            "uniform float uVertical;\n" +
+            "uniform float uDim;\n" +
             "varying vec2 vUV;\n" +
             "void main() {\n" +
             "  vec2 d = uDir;\n" +
@@ -49,29 +52,60 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
             "  vec2 uvB = clamp(vUV * uCropB.xy + uCropB.zw - d * uParallax, 0.0, 1.0);\n" +
             "  vec3 ca = texture2D(uBase, uvA).rgb;\n" +
             "  vec3 cb = texture2D(uReveal, uvB).rgb;\n" +
-            "  float extent = 0.5 * (abs(d.x) + abs(d.y));\n" +
-            "  float u = dot(vUV - 0.5, d) / max(extent * 2.0, 0.0001) + 0.5;\n" +
-            "  float edge = mix(-uSoft, 1.0 + uSoft, uFrac);\n" +
-            "  float m = 1.0 - smoothstep(edge - uSoft, edge + uSoft, u);\n" +
+            "  float m;\n" +
+            "  float glow = 0.0;\n" +
+            "  float sep = 1.0;\n" +
+            "  if (uStyle > 1.5) {\n" +
+            "    // 类OriginOS：整体快速切换，无空间边界\n" +
+            "    m = uFrac;\n" +
+            "  } else {\n" +
+            "    float extent = 0.5 * (abs(d.x) + abs(d.y));\n" +
+            "    vec2 luv = vUV;\n" +
+            "    if (uStyle > 0.5) {\n" +
+            "      // 百叶窗：每条约 1/6 宽的竖带独立求边界\n" +
+            "      float sx = fract(vUV.x * 6.0);\n" +
+            "      luv = vec2(sx, vUV.y);\n" +
+            "      sep = smoothstep(0.0, 0.015, sx) * smoothstep(1.0, 0.985, sx);\n" +
+            "    }\n" +
+            "    float u = dot(luv - 0.5, d) / max(extent * 2.0, 0.0001) + 0.5;\n" +
+            "    float edge = mix(-uSoft, 1.0 + uSoft, uFrac);\n" +
+            "    m = 1.0 - smoothstep(edge - uSoft, edge + uSoft, u);\n" +
+            "    glow = exp(-pow((u - edge) / max(uSoft, 0.001), 2.0)) * 0.10;\n" +
+            "  }\n" +
             "  vec3 col = mix(ca, cb, m);\n" +
-            "  float glow = exp(-pow((u - edge) / max(uSoft, 0.001), 2.0)) * 0.10;\n" +
             "  col += glow * vec3(0.18, 0.22, 0.35);\n" +
+            "  if (uStyle > 0.5 && uStyle < 1.5) {\n" +
+            "    col *= mix(0.78, 1.0, sep);\n" +
+            "  }\n" +
             "  float v = distance(vUV, vec2(0.5));\n" +
             "  col *= 1.0 - 0.28 * smoothstep(0.38, 0.95, v);\n" +
+            "  col *= 1.0 - uDim;\n" +
             "  gl_FragColor = vec4(col, 1.0);\n" +
             "}\n";
 
     private final FloatBuffer quad;
     private final String groupId;
     private int program;
-    private int aPos, aUV, uBase, uReveal, uCropA, uCropB, uFrac, uDir, uSoft, uParallax;
+    private int aPos, aUV, uBase, uReveal, uCropA, uCropB, uFrac, uDir, uSoft, uParallax,
+            uStyle, uVertical, uDim;
     private int[] textures;
     private int[] texW, texH;
     private boolean landscape;
     private int viewW = 1, viewH = 1;
 
     private volatile float phase = 0f;
+    private volatile float phaseX = 0f, phaseY = 0f;
+    private volatile float hx = 0f, hy = 0f;   // 归一化瞬时单轴倾角
+    private volatile int axisLine = 0;  // 0 全向 / 1 仅X / 2 仅Y
+    private volatile int axisH = 0;     // 0 横向 / 1 竖向（横向风格）
+    private volatile float eyeStrength; // 护眼强度（常驻低透光衰减，0=关闭）
     private volatile float dirX = 1f, dirY = 0f;
+    private volatile int style = 0;   // 0 过渡线 / 1 百叶窗 / 2 类OriginOS
+    private final HStepper hStep = new HStepper();
+
+    public void setStyle(int s) {
+        this.style = Math.max(0, Math.min(2, s));
+    }
 
     public LenticularView(Context context, String groupId) {
         super(context);
@@ -93,10 +127,24 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
         quad.put(v).position(0);
     }
 
-    public void setState(float phase, float dirX, float dirY) {
+    public void setState(float phase, float phaseX, float phaseY,
+                         float hx, float hy, float dirX, float dirY) {
         this.phase = phase;
+        this.phaseX = phaseX;
+        this.phaseY = phaseY;
+        this.hx = hx;
+        this.hy = hy;
         this.dirX = dirX;
         this.dirY = dirY;
+    }
+
+    public void setAxis(int axisLine, int axisH) {
+        this.axisLine = Math.max(0, Math.min(2, axisLine));
+        this.axisH = Math.max(0, Math.min(1, axisH));
+    }
+
+    public void setEyeStrength(float strength) {
+        this.eyeStrength = Math.max(0f, Math.min(0.30f, strength));
     }
 
     @Override
@@ -116,6 +164,9 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
         uDir = GLES20.glGetUniformLocation(program, "uDir");
         uSoft = GLES20.glGetUniformLocation(program, "uSoft");
         uParallax = GLES20.glGetUniformLocation(program, "uParallax");
+        uStyle = GLES20.glGetUniformLocation(program, "uStyle");
+        uVertical = GLES20.glGetUniformLocation(program, "uVertical");
+        uDim = GLES20.glGetUniformLocation(program, "uDim");
         textures = null;
     }
 
@@ -127,6 +178,7 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
         boolean land = width > height;
         if (land != landscape || textures == null) {
             landscape = land;
+            hStep.reset();
             loadGroup();
         }
         Log.i(TAG, "surface " + width + "x" + height + " landscape=" + landscape);
@@ -163,13 +215,48 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
         }
 
         int n = textures.length;
-        float ph = phase;
-        int seg = (int) Math.floor(ph) % n;
-        if (seg < 0) {
-            seg += n;
+        int seg, next;
+        float frac;
+        float ux, uy;
+        float verticalU = 0f;
+        if (style >= 1) {
+            // 横向风格：触发即 100ms 走完；轴可配横向/竖向
+            long now = android.os.SystemClock.uptimeMillis();
+            float hz = axisH == 1 ? hy : hx;
+            verticalU = axisH;
+            if (hStep.update(hz, now)) {
+                seg = hStep.fromMod(n);
+                next = hStep.segMod(n);
+                frac = hStep.progress(now);
+                ux = axisH == 1 ? 0f : hStep.dir;
+                uy = axisH == 1 ? hStep.dir : 0f;
+            } else {
+                seg = hStep.segMod(n);
+                next = seg;
+                frac = 0f;
+                ux = 1f;
+                uy = 0f;
+            }
+        } else {
+            float phUse = axisLine == 1 ? phaseX
+                    : axisLine == 2 ? phaseY : phase;
+            seg = (int) Math.floor(phUse) % n;
+            if (seg < 0) {
+                seg += n;
+            }
+            next = (seg + 1) % n;
+            frac = phUse - (float) Math.floor(phUse);
+            if (axisLine == 1) {
+                ux = 1f;
+                uy = 0f;
+            } else if (axisLine == 2) {
+                ux = 0f;
+                uy = 1f;
+            } else {
+                ux = dirX;
+                uy = dirY;
+            }
         }
-        int next = (seg + 1) % n;
-        float frac = ph - (float) Math.floor(ph);
 
         if (textures[seg] == 0 || textures[next] == 0) {
             return;
@@ -190,9 +277,12 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
         GLES20.glUniform4f(uCropA, ca[0], ca[1], ca[2], ca[3]);
         GLES20.glUniform4f(uCropB, cb[0], cb[1], cb[2], cb[3]);
         GLES20.glUniform1f(uFrac, frac);
-        GLES20.glUniform2f(uDir, dirX, dirY);
-        GLES20.glUniform1f(uSoft, 0.09f);
-        GLES20.glUniform1f(uParallax, 0.003f);
+        GLES20.glUniform2f(uDir, ux, uy);
+        GLES20.glUniform1f(uSoft, style == 2 ? 0.32f : 0.09f);
+        GLES20.glUniform1f(uParallax, style >= 1 ? 0f : 0.003f);
+        GLES20.glUniform1f(uStyle, style);
+        GLES20.glUniform1f(uVertical, verticalU);
+        GLES20.glUniform1f(uDim, eyeStrength);
 
         quad.position(0);
         GLES20.glEnableVertexAttribArray(aPos);

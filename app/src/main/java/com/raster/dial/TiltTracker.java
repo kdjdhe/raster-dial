@@ -22,7 +22,7 @@ import android.view.Surface;
 public class TiltTracker implements SensorEventListener {
 
     public interface Listener {
-        void onTilt(float phase, float dirX, float dirY);
+        void onTilt(Tilt t);
     }
 
     private static final String TAG = "TILT";
@@ -38,8 +38,23 @@ public class TiltTracker implements SensorEventListener {
     private final float[] prevQ = new float[4];
     private final float[] g0 = new float[3];
 
+    /** 倾角输出：phase 全向累计；phaseX/phaseY 有符号单轴跟随；hx/hy 瞬时单轴（归一化）。 */
+    public static final class Tilt {
+        public float phase;
+        public float phaseX;
+        public float phaseY;
+        public float hx;
+        public float hy;
+        public float dirX = 1f, dirY = 0f;
+    }
+
+    private final Tilt out = new Tilt();
+
     private final OneEuroFilter filterX = new OneEuroFilter(0.5f, 0.03f, 1.0f);
     private final OneEuroFilter filterY = new OneEuroFilter(0.5f, 0.03f, 1.0f);
+    /** 单轴专用低延迟通道：高截止频率 + 速度自适应，保证跟手。 */
+    private final OneEuroFilter filterHX = new OneEuroFilter(2.5f, 0.5f, 1.0f);
+    private final OneEuroFilter filterHY = new OneEuroFilter(2.5f, 0.5f, 1.0f);
 
     private boolean hasQ0;
     private boolean hasPrevQ;
@@ -123,6 +138,10 @@ public class TiltTracker implements SensorEventListener {
         smoothY = 0f;
         filterX.reset();
         filterY.reset();
+        filterHX.reset();
+        filterHY.reset();
+        out.phaseX = 0f;
+        out.phaseY = 0f;
         lastNs = 0;
     }
 
@@ -239,7 +258,18 @@ public class TiltTracker implements SensorEventListener {
             dt = 0.02f;
         }
 
-        // 1) One Euro 压手抖
+        // 0) 单轴跟手通道：轻滤波（低延迟），只保留很小的死区。
+        //    实测：左右倾斜对应屏幕 y 分量，上下倾斜对应 x 分量
+        float hx = filterHX.filter(sy, dt);
+        float hy = filterHY.filter(sx, dt);
+        if (Math.abs(hx) < DEAD * 0.6f) {
+            hx = 0f;
+        }
+        if (Math.abs(hy) < DEAD * 0.6f) {
+            hy = 0f;
+        }
+
+        // 1) One Euro 压手抖（过渡线式使用）
         float fx = filterX.filter(sx, dt);
         float fy = filterY.filter(sy, dt);
         float rawMag = (float) Math.hypot(fx, fy);
@@ -267,6 +297,8 @@ public class TiltTracker implements SensorEventListener {
         }
         phase += delta;
 
+
+
         // 3) 方向死区 + 慢平滑
         if (rawMag > DIR_MIN && mag > 1e-5f) {
             float nx = fx / mag;
@@ -284,7 +316,21 @@ public class TiltTracker implements SensorEventListener {
             }
         }
 
-        listener.onTilt(phase, smoothX, smoothY);
+        // 有符号单轴跟随相位（供“仅 X / 仅 Y”的连续过渡线）
+        float maxDeltaH = MAX_RATE * dt;
+        float targetX = hx / range;
+        float dxX = targetX - out.phaseX;
+        out.phaseX += Math.max(-maxDeltaH, Math.min(maxDeltaH, dxX));
+        float targetY = hy / range;
+        float dxY = targetY - out.phaseY;
+        out.phaseY += Math.max(-maxDeltaH, Math.min(maxDeltaH, dxY));
+
+        out.phase = phase;
+        out.hx = hx / range;
+        out.hy = hy / range;
+        out.dirX = smoothX;
+        out.dirY = smoothY;
+        listener.onTilt(out);
     }
 
     private static float dot4(float[] a, float[] b) {

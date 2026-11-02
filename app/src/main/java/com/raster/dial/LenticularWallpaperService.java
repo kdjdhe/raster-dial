@@ -46,6 +46,8 @@ public class LenticularWallpaperService extends WallpaperService {
 
         private TiltTracker tracker;
         private volatile float phase = 0f;
+        private volatile float hx = 0f, hy = 0f;    // 瞬时单轴倾角（归一化）
+        private volatile float phaseX = 0f, phaseY = 0f;  // 有符号单轴跟随相位
         private volatile float dirX = 1f, dirY = 0f;
         private volatile boolean visible;
 
@@ -54,6 +56,15 @@ public class LenticularWallpaperService extends WallpaperService {
         private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         private boolean debug = true;
+        private int styleMode;              // 0 过渡线 / 1 百叶窗 / 2 类OriginOS
+        private int axisLine;               // 0 全向 / 1 仅横向 / 2 仅竖向
+        private float eyeStrength;          // 护眼强度（常驻低透光衰减，0=关闭）
+        private int axisH;                  // 0 横向 / 1 竖向（横向风格）
+        private int lastStyle = -1;
+        private final Paint dividerPaint = new Paint();
+        private final HStepper hStep = new HStepper();
+        private static final int BLINDS_N = 6;
+        private static final float SCENE_HINT = 0.7f;  // 调试覆盖 phase→归一化倾角的换算
         private float avgMs;
         private int frames;
         private String debugText = "";
@@ -87,10 +98,14 @@ public class LenticularWallpaperService extends WallpaperService {
             loadGroup(g);
 
             tracker = new TiltTracker(LenticularWallpaperService.this,
-                    (p, dx, dy) -> {
-                        phase = p;
-                        dirX = dx;
-                        dirY = dy;
+                    t -> {
+                        phase = t.phase;
+                        phaseX = t.phaseX;
+                        phaseY = t.phaseY;
+                        hx = t.hx;
+                        hy = t.hy;
+                        dirX = t.dirX;
+                        dirY = t.dirY;
                     });
 
             debugPaint.setColor(0x99FFFFFF);
@@ -209,6 +224,15 @@ public class LenticularWallpaperService extends WallpaperService {
             overrideX = sp.getFloat("wall_dir_x", 1f);
             overrideY = sp.getFloat("wall_dir_y", 0f);
             debug = sp.getBoolean("wall_debug", true);
+            styleMode = Math.max(0, Math.min(2, sp.getInt("style", 0)));
+            axisLine = Math.max(0, Math.min(2, sp.getInt("axis_line", 0)));
+            axisH = Math.max(0, Math.min(1, sp.getInt("axis_h", 0)));
+            eyeStrength = Math.max(0f, Math.min(0.30f,
+                    sp.getFloat("eye_care_strength", 0f)));
+            if (styleMode != lastStyle) {
+                lastStyle = styleMode;
+                hStep.reset();
+            }
             float sens = sp.getFloat("sens", 0.35f);
             if (Math.abs(sens - lastSens) > 0.001f) {
                 lastSens = sens;
@@ -285,21 +309,82 @@ public class LenticularWallpaperService extends WallpaperService {
                 // 传感器输出 y 向上；Canvas y 向下
                 float dyCanvas = -dy;
 
-                int seg = ((int) Math.floor(ph)) % n;
-                if (seg < 0) {
-                    seg += n;
-                }
-                float frac = ph - (float) Math.floor(ph);
-                Bitmap base = images[seg];
-                Bitmap reveal = images[(seg + 1) % n];
-
-                drawAspect(c, base, w, ht);
-                if (reveal != null && frac > 0.001f) {
-                    if (frac >= 0.999f) {
-                        drawAspect(c, reveal, w, ht);
+                int dbgSeg;
+                float dbgFrac;
+                if (styleMode >= 1) {
+                    // 横向风格：瞬时倾角映射场景，触发后 100ms 一锤子走完
+                    long now = SystemClock.uptimeMillis();
+                    boolean vertical = axisH == 1;
+                    float hIn = overridePhase >= 0f ? overridePhase * SCENE_HINT
+                            : (vertical ? hy : hx);
+                    float soft = styleMode == 2 ? 0.32f : 0.09f;
+                    if (hStep.update(hIn, now)) {
+                        int from = hStep.fromMod(n);
+                        int to = hStep.segMod(n);
+                        float t = hStep.progress(now);
+                        float dirXW = vertical ? 0f : hStep.dir;
+                        float dirYW = vertical ? hStep.dir : 0f;
+                        drawAspect(c, images[from], w, ht);
+                        Bitmap reveal = images[to];
+                        if (reveal != null && t >= 0.001f) {
+                            if (t >= 0.999f) {
+                                drawAspect(c, reveal, w, ht);
+                            } else if (styleMode == 1) {
+                                drawBlinds(c, w, ht, t, dirXW, dirYW, reveal, vertical);
+                            } else {
+                                drawGradientWipe(c, w, ht, t, dirXW, dirYW, reveal, soft);
+                            }
+                        }
+                        dbgSeg = to;
+                        dbgFrac = t;
                     } else {
-                        drawGradientWipe(c, w, ht, frac, dx, dyCanvas, reveal);
+                        dbgSeg = hStep.segMod(n);
+                        dbgFrac = 0f;
+                        drawAspect(c, images[dbgSeg], w, ht);
                     }
+                } else {
+                    float phUse;
+                    float wdX;
+                    float wdY;
+                    if (overridePhase >= 0f) {
+                        phUse = overridePhase;
+                        wdX = dx;
+                        wdY = dyCanvas;
+                    } else if (axisLine == 1) {
+                        phUse = phaseX;
+                        wdX = 1f;
+                        wdY = 0f;
+                    } else if (axisLine == 2) {
+                        phUse = phaseY;
+                        wdX = 0f;
+                        wdY = 1f;
+                    } else {
+                        phUse = ph;
+                        wdX = dx;
+                        wdY = dyCanvas;
+                    }
+                    int seg = ((int) Math.floor(phUse)) % n;
+                    if (seg < 0) {
+                        seg += n;
+                    }
+                    float frac = phUse - (float) Math.floor(phUse);
+                    Bitmap base = images[seg];
+                    Bitmap reveal = images[(seg + 1) % n];
+
+                    drawAspect(c, base, w, ht);
+                    if (reveal != null && frac > 0.001f) {
+                        if (frac >= 0.999f) {
+                            drawAspect(c, reveal, w, ht);
+                        } else {
+                            drawGradientWipe(c, w, ht, frac, wdX, wdY, reveal, 0.09f);
+                        }
+                    }
+                    dbgSeg = seg;
+                    dbgFrac = frac;
+                }
+
+                if (eyeStrength > 0.001f) {
+                    c.drawColor(((int) (eyeStrength * 255)) << 24);
                 }
 
                 long dt = SystemClock.uptimeMillis() - t0;
@@ -311,7 +396,7 @@ public class LenticularWallpaperService extends WallpaperService {
                             group == null ? "?" : group.nameZh,
                             landscape ? "L" : "P",
                             lastRotation * 90,
-                            ph, seg, frac, dx, dyCanvas,
+                            ph, dbgSeg, dbgFrac, dx, dyCanvas,
                             overridePhase >= 0f ? " DBG" : "", avgMs);
                 }
                 if (debug && debugText.length() > 0) {
@@ -353,20 +438,25 @@ public class LenticularWallpaperService extends WallpaperService {
         }
 
         private void drawGradientWipe(Canvas c, int w, int ht, float frac,
-                                      float dx, float dy, Bitmap reveal) {
+                                      float dx, float dy, Bitmap reveal, float soft) {
             float cx = w * 0.5f;
             float cy = ht * 0.5f;
             float extent = 0.5f * (Math.abs(dx) * w + Math.abs(dy) * ht);
-            float x0 = cx - extent * dx;
-            float y0 = cy - extent * dy;
-            float x1 = cx + extent * dx;
-            float y1 = cy + extent * dy;
-
-            float soft = 0.09f;
             float edge = frac * (1f + 2f * soft) - soft;
-            float s0 = Math.max(0f, Math.min(1f, edge - soft));
-            float s1 = Math.max(0f, Math.min(1f, edge + soft));
+            setWipeShader(cx - extent * dx, cy - extent * dy,
+                    cx + extent * dx, cy + extent * dy,
+                    Math.max(0f, Math.min(1f, edge - soft)),
+                    Math.max(0f, Math.min(1f, edge + soft)));
 
+            int layer = c.saveLayer(0f, 0f, w, ht, null);
+            drawAspect(c, reveal, w, ht);
+            c.drawRect(0f, 0f, w, ht, maskPaint);
+            c.restoreToCount(layer);
+        }
+
+        /** 软渐变遮罩：s0..s1 为白色（显露）区间，两侧透明。 */
+        private void setWipeShader(float x0, float y0, float x1, float y1,
+                                   float s0, float s1) {
             int[] colors;
             float[] pos;
             if (s1 <= 0f) {
@@ -385,14 +475,59 @@ public class LenticularWallpaperService extends WallpaperService {
                 colors = new int[]{0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000};
                 pos = new float[]{0f, s0, s1, 1f};
             }
-
             maskPaint.setShader(new LinearGradient(x0, y0, x1, y1,
                     colors, pos, Shader.TileMode.CLAMP));
-
-            int layer = c.saveLayer(0f, 0f, w, ht, null);
-            drawAspect(c, reveal, w, ht);
-            c.drawRect(0f, 0f, w, ht, maskPaint);
-            c.restoreToCount(layer);
         }
+
+        /** 百叶窗：横向变化=竖分条（竖边界）；竖向变化=横分条（横边界），每条同步推进。 */
+        private void drawBlinds(Canvas c, int w, int ht, float frac,
+                                float dx, float dy, Bitmap reveal, boolean verticalAxis) {
+            float soft = 0.09f;
+            float edge = frac * (1f + 2f * soft) - soft;
+            float s0 = Math.max(0f, Math.min(1f, edge - soft));
+            float s1 = Math.max(0f, Math.min(1f, edge + soft));
+            dividerPaint.setColor(0x2E000000);
+            if (!verticalAxis) {
+                float stripW = w / (float) BLINDS_N;
+                for (int i = 0; i < BLINDS_N; i++) {
+                    float l = i * stripW;
+                    float cx = l + stripW * 0.5f;
+                    float cy = ht * 0.5f;
+                    float extent = 0.5f * (Math.abs(dx) * stripW + Math.abs(dy) * ht);
+                    setWipeShader(cx - extent * dx, cy - extent * dy,
+                            cx + extent * dx, cy + extent * dy, s0, s1);
+                    int layer = c.saveLayer(l, 0f, l + stripW, ht, null);
+                    c.clipRect(l, 0f, l + stripW, ht);
+                    drawAspect(c, reveal, w, ht);
+                    c.drawRect(l, 0f, l + stripW, ht, maskPaint);
+                    c.restoreToCount(layer);
+                }
+                for (int i = 1; i < BLINDS_N; i++) {
+                    float x = i * stripW;
+                    c.drawRect(x - 1.5f, 0f, x + 1.5f, ht, dividerPaint);
+                }
+            } else {
+                float stripH = ht / (float) BLINDS_N;
+                for (int i = 0; i < BLINDS_N; i++) {
+                    float t = i * stripH;
+                    float cx = w * 0.5f;
+                    float cy = t + stripH * 0.5f;
+                    float extent = 0.5f * (Math.abs(dx) * w + Math.abs(dy) * stripH);
+                    setWipeShader(cx - extent * dx, cy - extent * dy,
+                            cx + extent * dx, cy + extent * dy, s0, s1);
+                    int layer = c.saveLayer(0f, t, w, t + stripH, null);
+                    c.clipRect(0f, t, w, t + stripH);
+                    drawAspect(c, reveal, w, ht);
+                    c.drawRect(0f, t, w, t + stripH, maskPaint);
+                    c.restoreToCount(layer);
+                }
+                for (int i = 1; i < BLINDS_N; i++) {
+                    float y = i * stripH;
+                    c.drawRect(0f, y - 1.5f, w, y + 1.5f, dividerPaint);
+                }
+            }
+        }
+
+
     }
 }

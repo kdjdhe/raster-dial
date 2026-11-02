@@ -1,13 +1,13 @@
 {
-  "versionCode": 8,
-  "versionName": "0.1.7",
+  "versionCode": 9,
+  "versionName": "0.1.8",
   "minSdk": 28,
-  "publishedAt": "2026-11-02T06:33:55Z",
-  "sha256": "3c372d4862e7efe86a4812af4948ee85aec771cd1d4e37d37992488900cbe6c6",
-  "size": 8478717,
-  "notes": "0.1.7: 更新检查切换到成都主源（直连 8443，Let's Encrypt），内容同 0.1.6（含切组修复）。",
+  "publishedAt": "2026-11-02T12:28:57Z",
+  "sha256": "b13b87a8afb59889ad85e6d73841d36f5b67fbe20b167a15669ab8e776804ec5",
+  "size": 8487453,
+  "notes": "0.1.8: 新增百叶窗与类OriginOS过渡方式、变化轴配置、护眼强度；切换更干脆跟手。",
   "apkUrls": [
-    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.7.apk",
-    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.7/raster-dial-0.1.7.apk"
+    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.8.apk",
+    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.8/raster-dial-0.1.8.apk"
   ]
 }

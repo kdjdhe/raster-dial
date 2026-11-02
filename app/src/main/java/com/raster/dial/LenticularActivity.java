@@ -136,7 +136,18 @@ public class LenticularActivity extends Activity {
                 Gravity.TOP));
 
         TextView hint = new TextView(this);
-        hint.setText(group.nameZh + " · 上滑退出 · 倾斜切换");
+        int styleNow = Math.max(0, Math.min(2,
+                getSharedPreferences("lock", MODE_PRIVATE).getInt("style", 0)));
+        int axisLineNow = Math.max(0, Math.min(2,
+                getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_line", 0)));
+        int axisHNow = Math.max(0, Math.min(1,
+                getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_h", 0)));
+        String[] styleNames = {"过渡线", "百叶窗", "类OriginOS"};
+        String axisDesc = styleNow == 0
+                ? new String[]{"全向", "仅横向", "仅竖向"}[axisLineNow]
+                : new String[]{"横向", "竖向"}[axisHNow];
+        hint.setText(group.nameZh + " · " + styleNames[styleNow]
+                + "（" + axisDesc + "） · 上滑退出");
         hint.setTextSize(12);
         hint.setLetterSpacing(0.03f);
         hint.setTextColor(0xD9FFFFFF);
@@ -188,7 +199,8 @@ public class LenticularActivity extends Activity {
             view.setState(p, p, p, p * 0.7f, p * 0.7f,
                     (float) Math.cos(a), (float) Math.sin(a));
             hint.setText(String.format(Locale.US,
-                    "固定预览 phase=%.2f  ·  点 × 退出", p));
+                    "固定预览 phase=%.2f  ·  %s（%s）  ·  点 × 退出",
+                    p, styleNames[styleNow], axisDesc));
         } else {
             tracker = new TiltTracker(this, t -> view.setState(t.phase, t.phaseX,
                     t.phaseY, t.hx, t.hy, t.dirX, t.dirY));

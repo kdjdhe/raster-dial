@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.9] - 2026-11-02
+
+### Added
+
+- Settings screen (⚙ in the main header), styled like a system "About/Settings"
+  page: back pill, large title, centered about block, section labels and grouped
+  cards with hairline rows.
+- Moved into Settings: theme picker, update check (current version + explanation row),
+  clear debug override, restore default wallpaper.
+- Main screen now keeps only daily actions (group, effect, preview, wallpaper, note).
+
+### Changed
+
+- versionCode 10 / versionName 0.1.9.
+
 ## [0.1.8] - 2026-11-02
 
 ### Added

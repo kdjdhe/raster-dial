@@ -207,16 +207,17 @@ Manual acceptance on a device:
 
 ## Tested Lock-Screen Support
 
-The app does not implement a lock screen itself. Whether the system live-wallpaper preview offers "set as lock screen / set for both" depends on each vendor's wallpaper manager and keyguard; AOSP provides no unified guarantee. Observed on real devices (2026-11-01):
+The app does not implement a lock screen itself. Whether the system live-wallpaper preview offers "set as lock screen / set for both" depends on each vendor's wallpaper manager and keyguard; AOSP provides no unified guarantee. Observed on real devices (2026-11-02):
 
 | Device | OS | Android | Settable as lock screen | Notes |
 |---|---|---|---|---|
 | Xiaomi 15 Pro | HyperOS 3 (OS3.0.309.0.WOBCNXM.C11) | 16 | ✅ | Preview offers wallpaper / lock screen / both |
 | vivo X200s | OriginOS 6 | 16 | ✅ | Same as above |
 | NZONE | EMUI 11 | 10 | ❌ | Wallpaper only; live wallpaper cannot be set on the lock screen |
+| HUAWEI P30 Pro | HarmonyOS 4.0.0.112 | 10 | ❌ | Wallpaper only; live wallpaper cannot be set on the lock screen |
 | Honor Pad 9 Pro | MagicOS 8 | 14 | ❌ | Same as above |
 
-Pattern: HyperOS / OriginOS integrate live wallpapers into the keyguard and expose the lock-screen entry; EMUI / MagicOS lock-screen wallpapers go through their own static pipelines.
+Pattern: HyperOS / OriginOS integrate live wallpapers into the keyguard and expose the lock-screen entry; EMUI / HarmonyOS / MagicOS lock-screen wallpapers go through their own static pipelines.
 
 ## Known Limitations and Roadmap
 

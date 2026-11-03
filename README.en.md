@@ -49,7 +49,7 @@ git status --short
 - **Configurable axis**: gradient line 全向 / 仅横向 / 仅竖向; blinds and OriginOS-like 横向 / 竖向.
 - **Eye-care strength**: 0–30% persistent luminance attenuation (leftmost = off) that reduces switch flashing; haptic tick per step.
 - **5 built-in demo groups + custom**: Yixuan, Pyrois, Miyabi, Vivian, Ye Shunguang.
-- **Multiple custom groups**: create, name/rename, delete; 1–6 images per group with pick, rotate 90°, reorder, and delete.
+- **Multiple custom groups**: create, name/rename, delete; 1–6 images per group with pick, rotate 90°, long-press drag reorder, in-editor full-screen preview, and delete.
 - **Tablets/foldables**: the runtime surface aspect ratio selects portrait/landscape assets; aspect-fill cropping; display-rotation compensation.
 - **Wallpaper only**: no lock-screen takeover, no flashing, no boot service.
 - **In-app updates**: Chengdu primary → Gitee secondary → GitHub backup; SHA-256 verification; system installer.
@@ -62,7 +62,7 @@ git status --short
 - 2–3 images per group: Pyrois has 2; the other 4 have 3; 5 groups / 14 images in total.
 - Images are ranked by colorfulness (1 = most colorful; 2/3 decrease). Scores are in `app/src/main/assets/groups/groups.json` under `scores`.
 - Portrait assets are the source images rotated 90° clockwise; landscape assets use the original orientation.
-- Half-range angle (tilt needed for one transition): high 14° / medium 20° (default) / low 30°. A full A→B→A cycle is 2 × the half-range.
+- Half-range angle (tilt needed for one transition): the 0–100% sensitivity slider maps to 34° → 8.6°, default 55% ≈ 20°. A full A→B→A cycle is 2 × the half-range.
 - Pose uses the axis-angle `(x, y)` of the relative quaternion, not Euler angles; face-down or near-horizontal poses do not strobe from roll/pitch flips.
 - Debounce: soft dead zone 0.015 rad (~0.86°), direction dead zone 0.02 rad (~1.15°), phase limit 3 cycles/s.
 - 3-image groups: 0→1 first→second, 1→2 second→third, 2→3 third→first; 2-image groups: 0→1 first→second, 1→2 second→first.
@@ -138,7 +138,7 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 | Wallpaper debug line | Bottom-left: group, portrait/landscape, rotation, `phase`, segment, segment progress, direction, frame time |
 | Invert sweep | Swap the side the gradient sweeps from |
 | Select group | Opens the picker; tap a card; custom cards can be edited / named / deleted |
-| Manage custom groups | Create groups; 1–6 images each; pick / rotate / reorder / delete |
+| Manage custom groups | Create groups; 1–6 images each; pick / rotate / drag-reorder / delete / full-screen preview |
 | Set as live wallpaper | Opens the system live-wallpaper picker |
 | Clear wallpaper | Restores the system default static wallpaper |
 | Check for updates | Reads manifests in Chengdu → Gitee → GitHub order; downloads and verifies SHA-256 |
@@ -222,8 +222,8 @@ Manual acceptance on a device:
 
 - Multiple custom groups, each with a user name; create, rename, delete;
 - Picker cards with thumbnails, a current marker, and built-in/custom badges; tap to switch; custom cards have "Edit";
-- Editor: name field + save; 1–6 images per group (a new group may start empty; at least 1 to "Use this group");
-- Each slot: pick (system file picker), rotate 90°, move up/down, delete;
+- Editor: name field + save; **全屏预览（传感器）** previews the group being edited without switching the current group; 1–6 images per group (a new group may start empty; at least 1 to "Use this group");
+- Each slot: pick (system file picker), rotate 90°, long-press drag reorder (槽位 N renumbers live with position), delete;
 - The old single custom group migrates to a group named 自定义; a fresh install seeds one "自定义" group with 2 Pyrois images;
 - Files live in the app's private `files` directory under `custom`: `groups.json` plus each image's `m_*.webp` (master) and `s_*.webp` (rotated display);
 - Imports are EXIF-corrected; the master's longest edge is 3000 px and the display's longest edge is 1600 px.

@@ -1,14 +1,14 @@
 {
-  "versionCode": 12,
-  "versionName": "0.1.11",
+  "versionCode": 13,
+  "versionName": "0.1.12",
   "minSdk": 28,
-  "publishedAt": "2026-11-03T06:00:01Z",
-  "sha256": "b2c43fc2faf935452f69f8f83577e64cb1ae7917a8f82502c27e70351fd6310f",
-  "size": 8496141,
-  "notes": "0.1.11: 更新源三级（成都→Gitee→GitHub）；灵敏度改为 0-100% 连续滑杆，实时显示。",
+  "publishedAt": "2026-11-03T07:53:39Z",
+  "sha256": "83e6003337df35ac4e62566e70b6876c6ba3a22d164f6cc226c67feb2ca22ea9",
+  "size": 8501585,
+  "notes": "0.1.12: 主屏预览只保留全屏；自定义组编辑器内可预览；槽位长按拖拽弹簧排序；弹窗与输入框统一。",
   "apkUrls": [
-    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.11.apk",
-    "https://gitee.com/kdjdhe/raster-dial/releases/download/v0.1.11/raster-dial-0.1.11.apk",
-    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.11/raster-dial-0.1.11.apk"
+    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.12.apk",
+    "https://gitee.com/kdjdhe/raster-dial/releases/download/v0.1.12/raster-dial-0.1.12.apk",
+    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.12/raster-dial-0.1.12.apk"
   ]
 }

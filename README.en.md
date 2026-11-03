@@ -52,7 +52,7 @@ git status --short
 - **Multiple custom groups**: create, name/rename, delete; 1–6 images per group with pick, rotate 90°, reorder, and delete.
 - **Tablets/foldables**: the runtime surface aspect ratio selects portrait/landscape assets; aspect-fill cropping; display-rotation compensation.
 - **Wallpaper only**: no lock-screen takeover, no flashing, no boot service.
-- **In-app updates**: Chengdu primary + Gitee / GitHub fallback; SHA-256 verification; system installer.
+- **In-app updates**: Chengdu primary → Gitee secondary → GitHub backup; SHA-256 verification; system installer.
 - **6 themes**: Obsidian / Glacier / Moss / Violet / Crimson / Gold; one-tap switch, remembered.
 - **Long-press drag reordering**: lift a card in the picker, 1:1 tracking, spring make-way, per-slot haptic.
 - **Search / export & import**: search groups in the picker; bundle a custom group to share, import others'.
@@ -141,7 +141,7 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 | Manage custom groups | Create groups; 1–6 images each; pick / rotate / reorder / delete |
 | Set as live wallpaper | Opens the system live-wallpaper picker |
 | Clear wallpaper | Restores the system default static wallpaper |
-| Check for updates | Reads the Chengdu primary + Gitee / GitHub fallbacks; downloads and verifies SHA-256 |
+| Check for updates | Reads manifests in Chengdu → Gitee → GitHub order; downloads and verifies SHA-256 |
 
 Debug broadcast (the `-n` component is required; implicit broadcasts are not delivered on this EMUI build):
 

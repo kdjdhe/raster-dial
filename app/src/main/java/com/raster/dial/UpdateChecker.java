@@ -70,7 +70,7 @@ public final class UpdateChecker {
         new Thread(() -> {
             UpdateInfo info;
             try {
-                info = fetchBest();
+                info = fetchBest(installedCode(a));
             } catch (Exception e) {
                 info = null;
             }
@@ -104,16 +104,30 @@ public final class UpdateChecker {
         }, "update-check").start();
     }
 
-    private static UpdateInfo fetchBest() {
-        UpdateInfo primary = fetchManifest(BuildConfig.UPDATE_MANIFEST_PRIMARY);
-        UpdateInfo fallback = fetchManifest(BuildConfig.UPDATE_MANIFEST_FALLBACK);
-        if (primary == null) {
-            return fallback;
+    /** 清单源按优先级排列：成都主源 → Gitee 副源 → GitHub 备用源。 */
+    private static final String[] MANIFEST_URLS = {
+            BuildConfig.UPDATE_MANIFEST_PRIMARY,
+            BuildConfig.UPDATE_MANIFEST_SECONDARY,
+            BuildConfig.UPDATE_MANIFEST_FALLBACK,
+    };
+
+    private static UpdateInfo fetchBest(long installed) {
+        UpdateInfo best = null;
+        for (String url : MANIFEST_URLS) {
+            UpdateInfo got = fetchManifest(url);
+            if (got == null) {
+                continue;
+            }
+            if (best == null || got.versionCode > best.versionCode) {
+                best = got;
+            }
+            // 已经拿到比本机新的清单就不用再探后面的镜像；只有“没有新版本”时才继续
+            // 核对副源/备用源，避免主源同步滞后导致误报“已是最新”。
+            if (best.versionCode > installed) {
+                break;
+            }
         }
-        if (fallback == null) {
-            return primary;
-        }
-        return fallback.versionCode > primary.versionCode ? fallback : primary;
+        return best;
     }
 
     private static UpdateInfo fetchManifest(String url) {

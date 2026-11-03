@@ -5,15 +5,17 @@
 App 内置更新检查。成都服务器是主源，Gitee 是国内镜像，GitHub 是最后的回退源；
 三边都只放静态文件：`update.json` + APK。没有后端服务。
 
-> Gitee 目前只镜像 **APK**（`apkUrls[1]`）。manifest 仍由成都主源 + GitHub raw 提供，
-> 因为 manifest 地址编译在 APK 里，加第三个源需要重新构建发版。
+> 三个源的分工：**成都主源 → Gitee 副源 → GitHub 备用源**；manifest 和 APK 都是这个顺序。
+> 0.1.11 起 manifest 也按此顺序读取（0.1.10 及更早只认成都 + GitHub，Gitee 仅供 APK 下载）。
 
 ## 1. 工作流
 
-1. App 读取两个 manifest：
-   - 成都：`https://update.litanghub.top:8443/raster-dial/update.json`
-   - GitHub raw：`https://raw.githubusercontent.com/kdjdhe/raster-dial/main/update.json`
-2. 取 `versionCode` 较大的 manifest。
+1. App 按优先级读取 manifest（0.1.11 起三个都读）：
+   - 成都主源：`https://update.litanghub.top:8443/raster-dial/update.json`
+   - Gitee 副源：`https://gitee.com/kdjdhe/raster-dial/raw/main/update.json`
+   - GitHub 备用：`https://raw.githubusercontent.com/kdjdhe/raster-dial/main/update.json`
+2. 取 `versionCode` 较大的 manifest；一旦拿到比本机新的就不再探后面的镜像
+   （避免主源滞后时误报“已是最新”）。
 3. 如果 `versionCode` 大于已安装版本，弹窗展示版本、说明和大小。
 4. 用户点“下载并安装”后，按 `apkUrls` 顺序下载（成都 → Gitee → GitHub）。
 5. 下载完成校验 SHA-256；通过后交给系统安装器。
@@ -56,12 +58,14 @@ App 内置更新检查。成都服务器是主源，Gitee 是国内镜像，GitH
 ```kotlin
 buildConfigField("String", "UPDATE_MANIFEST_PRIMARY",
     "\"https://update.litanghub.top:8443/raster-dial/update.json\"")
+buildConfigField("String", "UPDATE_MANIFEST_SECONDARY",
+    "\"https://gitee.com/kdjdhe/raster-dial/raw/main/update.json\"")
 buildConfigField("String", "UPDATE_MANIFEST_FALLBACK",
     "\"https://raw.githubusercontent.com/kdjdhe/raster-dial/main/update.json\"")
 ```
 
-主源地址编译进 APK（0.1.7 起）；换域名/端口需要重新构建发版。GitHub 回退随 `main` 的
-`update.json` 生效，不用重建。
+三个清单地址都编译进 APK（0.1.7 起有主源；0.1.11 起加了 Gitee 副源）；换域名/端口需要重新
+构建发版。Gitee / GitHub 的 manifest 随各自仓库 `main` 的 `update.json` 生效，不用重建。
 
 > 0.1.1 及更早版本没有更新检查。需要手动安装一次 0.1.2，之后才能在 App 内更新。
 
@@ -235,5 +239,6 @@ tools/sync_chengdu.sh work/raster-dial-0.1.7.apk
 - 仓库 `update.json`（versionCode 11 / 0.1.10）与成都服务器上的清单是同一份：
   `apkUrls[0]` 成都、`[1]` Gitee Release、`[2]` GitHub Release。
 - Gitee 镜像 **已上线**：`https://gitee.com/kdjdhe/raster-dial`，v0.1.10 APK 匿名可下。
-- `BuildConfig.UPDATE_MANIFEST_PRIMARY` 自 0.1.7 起指向成都主源；manifest 仍只有
-  成都 + GitHub 两个来源，Gitee 作为 APK 镜像兜底（第三 manifest 源留到 0.1.11）。
+- `BuildConfig.UPDATE_MANIFEST_PRIMARY` 自 0.1.7 起指向成都主源；0.1.11 起 manifest 也是
+  **成都 → Gitee → GitHub** 三级，APK 同样三级。0.1.10 及更早只读成都 + GitHub 两个 manifest，
+  Gitee 仅作为 `apkUrls[1]` 的 APK 镜像（仍能救“成都超时 + GitHub 被墙”的设备）。

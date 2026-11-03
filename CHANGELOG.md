@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.11] - 2026-11-03
+
+### Changed
+
+- Update sources are now explicitly tiered: **Chengdu primary → Gitee secondary →
+  GitHub backup**, for both the manifest and the APK.
+  - `BuildConfig.UPDATE_MANIFEST_SECONDARY` points at
+    `https://gitee.com/kdjdhe/raster-dial/raw/main/update.json`.
+  - The checker walks the manifest list in order and stops as soon as it has a
+    manifest newer than the installed build; when nothing is newer it still probes
+    the mirrors, so a stale primary can no longer report "up to date" while a newer
+    release exists elsewhere.
+- versionCode 12 / versionName 0.1.11.
+
 ## [0.1.10] - 2026-11-02
 
 ### Fixed

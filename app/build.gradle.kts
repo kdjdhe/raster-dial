@@ -23,10 +23,12 @@ android {
         applicationId = "com.raster.dial"
         minSdk = 28
         targetSdk = 34
-        versionCode = 11
-        versionName = "0.1.10"
+        versionCode = 12
+        versionName = "0.1.11"
         buildConfigField("String", "UPDATE_MANIFEST_PRIMARY",
             "\"https://update.litanghub.top:8443/raster-dial/update.json\"")
+        buildConfigField("String", "UPDATE_MANIFEST_SECONDARY",
+            "\"https://gitee.com/kdjdhe/raster-dial/raw/main/update.json\"")
         buildConfigField("String", "UPDATE_MANIFEST_FALLBACK",
             "\"https://raw.githubusercontent.com/kdjdhe/raster-dial/main/update.json\"")
     }

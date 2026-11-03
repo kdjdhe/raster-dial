@@ -18,6 +18,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,11 +30,13 @@ public class MainActivity extends Activity {
     private TextView groupName;
     private TextView groupMeta;
     private TextView groupEdit;
-    private LinearLayout segmentedHost;
+    private TextView sensLabel;
+
+    // 灵敏度映射：0–100% ↔ 半程角 0.60 → 0.15 rad（约 34° → 8.6°），默认 55% ≈ 20°
+    private static final float RANGE_MIN = 0.15f;   // 100%：最灵敏
+    private static final float RANGE_MAX = 0.60f;   // 0%：最迟钝
     private LinearLayout axisHost;
 
-    private static final float[] SENS = {0.24f, 0.35f, 0.52f};
-    private static final String[] SENS_LABEL = {"高 14°", "中 20°", "低 30°"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -190,11 +193,44 @@ public class MainActivity extends Activity {
         // ---------- 效果 ----------
         LinearLayout effect = Ui.card(this);
         effect.addView(Ui.overline(this, "效果"));
-        segmentedHost = new LinearLayout(this);
-        segmentedHost.setOrientation(LinearLayout.VERTICAL);
-        segmentedHost.setPadding(0, Ui.dp(this, 10), 0, 0);
-        effect.addView(segmentedHost);
-        buildSegmented();
+        // 灵敏度滑杆：0–100%，标签实时跟随
+        LinearLayout sensBlock = new LinearLayout(this);
+        sensBlock.setOrientation(LinearLayout.VERTICAL);
+        sensBlock.setPadding(0, Ui.dp(this, 14), 0, 0);
+        effect.addView(sensBlock);
+        sensLabel = Ui.text(this, "灵敏度 " + sensPercent() + "%", 14, Ui.TEXT, false);
+        sensBlock.addView(sensLabel);
+        SeekBar sensBar = new SeekBar(this);
+        sensBar.setMax(100);
+        sensBar.setProgress(sensPercent());
+        sensBar.setProgressTintList(ColorStateList.valueOf(Ui.ACCENT));
+        sensBar.setThumbTintList(ColorStateList.valueOf(Ui.ACCENT));
+        sensBar.setProgressBackgroundTintList(ColorStateList.valueOf(0xFF2A2A36));
+        sensBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar sb, int p, boolean fromUser) {
+                if (!fromUser) {
+                    return;
+                }
+                getSharedPreferences("lock", MODE_PRIVATE).edit()
+                        .putFloat("sens", sensForPercent(p)).apply();
+                sensLabel.setText("灵敏度 " + p + "%");
+                Ui.hapticTick(sb);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar sb) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar sb) {
+            }
+        });
+        LinearLayout.LayoutParams sensLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        sensLp.topMargin = Ui.dp(this, 4);
+        sensBlock.addView(sensBar, sensLp);
 
         // 过渡方式：过渡线 / 百叶窗 / 类OriginOS
         LinearLayout styleHost = new LinearLayout(this);
@@ -320,12 +356,16 @@ public class MainActivity extends Activity {
         return lp;
     }
 
-    private void buildSegmented() {
-        segmentedHost.removeAllViews();
-        int idx = sensIndex();
-        segmentedHost.addView(Ui.segmented(this, SENS_LABEL, idx, i ->
-                getSharedPreferences("lock", MODE_PRIVATE)
-                        .edit().putFloat("sens", SENS[i]).apply()));
+    /** 当前灵敏度百分比（0–100）。 */
+    private int sensPercent() {
+        float r = getSharedPreferences("lock", MODE_PRIVATE).getFloat("sens", 0.35f);
+        int p = Math.round((RANGE_MAX - r) / (RANGE_MAX - RANGE_MIN) * 100f);
+        return Math.max(0, Math.min(100, p));
+    }
+
+    /** 百分比 → 半程角（rad）。 */
+    private float sensForPercent(int p) {
+        return RANGE_MAX - (RANGE_MAX - RANGE_MIN) * (p / 100f);
     }
 
     private Switch switchRow(LinearLayout parent, String text, boolean checked,
@@ -416,20 +456,6 @@ public class MainActivity extends Activity {
     private int styleIndex() {
         return Math.max(0, Math.min(2,
                 getSharedPreferences("lock", MODE_PRIVATE).getInt("style", 0)));
-    }
-
-    private int sensIndex() {
-        float v = getSharedPreferences("lock", MODE_PRIVATE).getFloat("sens", 0.35f);
-        int best = 1;
-        float bestDiff = Float.MAX_VALUE;
-        for (int i = 0; i < SENS.length; i++) {
-            float d = Math.abs(SENS[i] - v);
-            if (d < bestDiff) {
-                bestDiff = d;
-                best = i;
-            }
-        }
-        return best;
     }
 
     private void preview(float phase, float angleDeg) {

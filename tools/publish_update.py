@@ -53,6 +53,8 @@ def main():
                         help="Chengdu base URL; the APK filename is appended")
     parser.add_argument("--asset-name", default="",
                         help="Release/Chengdu APK filename; defaults to raster-dial-<version>-debug.apk")
+    parser.add_argument("--gitee-url", default="",
+                        help="Gitee release asset URL; defaults to the v<version> release asset")
     parser.add_argument("--github-url", default="",
                         help="GitHub release asset URL; defaults to the v<version> release asset")
     parser.add_argument("--notes", default="")
@@ -78,6 +80,9 @@ def main():
     github = args.github_url.strip() or (
         "https://github.com/kdjdhe/raster-dial/releases/download/v%s/%s"
         % (version_name, filename))
+    gitee = args.gitee_url.strip() or (
+        "https://gitee.com/kdjdhe/raster-dial/releases/download/v%s/%s"
+        % (version_name, filename))
     chengdu = args.chengdu_base.rstrip("/") + "/" + filename
     notes = args.notes.strip() or ("Raster Dial %s" % version_name)
 
@@ -89,7 +94,7 @@ def main():
         "sha256": hashlib.sha256(data).hexdigest(),
         "size": len(data),
         "notes": notes,
-        "apkUrls": [chengdu, github],
+        "apkUrls": [chengdu, gitee, github],
     }
     Path(args.out).write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

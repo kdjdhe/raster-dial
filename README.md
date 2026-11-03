@@ -52,7 +52,7 @@ git status --short
 - **多个自定义组**：可新建、命名/重命名、删除；每组 1–6 张，选图、旋转 90°、↑↓ 排序。
 - **平板/折叠屏**：运行时按 surface 宽高比选竖/横素材，aspect-fill 裁切，按屏幕旋转补偿方向。
 - **只做壁纸**：不接管锁屏、不刷机、无开机自启服务。
-- **应用内更新**：成都主源 + GitHub 回退，SHA-256 校验后交给系统安装器。
+- **应用内更新**：成都主源 + Gitee / GitHub 回退，SHA-256 校验后交给系统安装器。
 - **6 套主题**：曜石 / 冰川 / 森绿 / 霞紫 / 绯红 / 鎏金，主屏一键切换并记忆。
 - **长按拖拽排序**：选择器里长按拿起、1:1 跟手、其他卡片弹簧让位、跨位轻震。
 - **搜索 / 导入导出**：选择器内搜索光栅组；自定义组可打包分享、导入他人的组。
@@ -121,8 +121,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | `tools/build_landscape.py` | 横屏素材生成 |
 | `tools/publish_update.py` | 从 APK 生成 `update.json` |
 | `tools/sync_chengdu.sh` | 上传 `update.json` + APK 到成都服务器 |
-| `update.json` | App 更新清单（versionCode、SHA-256、成都/GitHub 镜像） |
-| `docs/UPDATE_SOURCE.md` | 成都服务器 + GitHub 更新源部署与发布流程 |
+| `tools/sync_gitee.sh` | 推送 `main` 并把 APK 传到 Gitee Release（国内镜像） |
+| `update.json` | App 更新清单（versionCode、SHA-256、成都/Gitee/GitHub 镜像） |
+| `docs/UPDATE_SOURCE.md` | 成都服务器 + Gitee/GitHub 更新源部署与发布流程 |
 | `docs/SIGNING.md` | debug/release 签名、keystore、更新源迁移 |
 | `keystore.properties.example` | release 签名配置示例（真实文件被 gitignore） |
 | `docs/COMPATIBILITY.md` | 其他 Android 设备与平板的兼容性分析 |
@@ -140,7 +141,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | 管理自定义组 | 新建组；每组 1–6 张，选图 / 旋转 / 排序 / 删除 |
 | 设为光栅壁纸 | 打开系统动态壁纸选择器 |
 | 清除壁纸 | 恢复系统默认静态壁纸 |
-| 检查更新 | 读取成都主源 + GitHub 回退；有新版时下载、校验 SHA-256 |
+| 检查更新 | 读取成都主源 + Gitee / GitHub 回退；有新版时下载、校验 SHA-256 |
 
 调试广播（必须带 `-n`；这台 EMUI 的隐式广播不会送达）：
 
@@ -185,6 +186,7 @@ python tools/build_groups.py     # 重新生成竖屏素材 + groups.json
 python tools/build_landscape.py  # 重新生成横屏素材
 python tools/publish_update.py --chengdu-base https://updates.example.com/raster-dial
 CHENGDU_HOST=user@your-server CHENGDU_KEY=~/.ssh/your-deploy-key tools/sync_chengdu.sh work/raster-dial-0.1.8.apk
+GITEE_TOKEN=... tools/sync_gitee.sh work/raster-dial-0.1.8.apk
 ```
 
 素材生成默认读取仓库根目录的 `art` 目录；也可以把 `RASTER_SRC` 指向你的原图目录：

@@ -1,9 +1,12 @@
-# 应用更新源：成都服务器 + GitHub 回退
+# 应用更新源：成都服务器 + Gitee / GitHub 回退
 
 > **安全**：本文档中的服务器 IP、登录用户和密钥路径一律使用占位符。真实值只保存在本机和服务器上，**绝不能提交到仓库**；提交前自查与误提交处理见 README 的「安全与敏感信息」。
 
-App 内置更新检查。成都服务器是主源，GitHub 是回退源；两边都只放静态文件：
-`update.json` + APK。没有后端服务。
+App 内置更新检查。成都服务器是主源，Gitee 是国内镜像，GitHub 是最后的回退源；
+三边都只放静态文件：`update.json` + APK。没有后端服务。
+
+> Gitee 目前只镜像 **APK**（`apkUrls[1]`）。manifest 仍由成都主源 + GitHub raw 提供，
+> 因为 manifest 地址编译在 APK 里，加第三个源需要重新构建发版。
 
 ## 1. 工作流
 
@@ -12,7 +15,7 @@ App 内置更新检查。成都服务器是主源，GitHub 是回退源；两边
    - GitHub raw：`https://raw.githubusercontent.com/kdjdhe/raster-dial/main/update.json`
 2. 取 `versionCode` 较大的 manifest。
 3. 如果 `versionCode` 大于已安装版本，弹窗展示版本、说明和大小。
-4. 用户点“下载并安装”后，按 `apkUrls` 顺序下载（成都先，GitHub 后）。
+4. 用户点“下载并安装”后，按 `apkUrls` 顺序下载（成都 → Gitee → GitHub）。
 5. 下载完成校验 SHA-256；通过后交给系统安装器。
 6. 某个 URL 失败或 SHA 不匹配，自动试下一个。
 7. 首次安装需要允许“安装未知应用”。
@@ -30,6 +33,7 @@ App 内置更新检查。成都服务器是主源，GitHub 是回退源；两边
   "notes": "0.1.7: 更新检查切换到成都主源。",
   "apkUrls": [
     "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.7.apk",
+    "https://gitee.com/kdjdhe/raster-dial/releases/download/v0.1.7/raster-dial-0.1.7.apk",
     "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.7/raster-dial-0.1.7.apk"
   ]
 }
@@ -61,14 +65,34 @@ buildConfigField("String", "UPDATE_MANIFEST_FALLBACK",
 
 > 0.1.1 及更早版本没有更新检查。需要手动安装一次 0.1.2，之后才能在 App 内更新。
 
+## 3.5 Gitee 镜像（国内）
+
+- 仓库：`https://gitee.com/kdjdhe/raster-dial`（公开，`main` 与 GitHub 同源）。
+- APK 直链：`https://gitee.com/kdjdhe/raster-dial/releases/download/v<version>/raster-dial-<version>.apk`
+  匿名可下（302 → `raw.giteeusercontent.com` 签名地址，App 的 `followRedirects` 已打开）。
+- 发布：
+
+  ```bash
+  export GITEE_TOKEN=...        # 或写到 ~/.gitee_token（chmod 600）
+  tools/sync_gitee.sh work/raster-dial-<version>.apk
+  ```
+
+  脚本会：推 `main` → 建 `v<version>` Release（已存在则复用）→ 上传 APK 附件
+  （已存在则跳过）→ 匿名下载自检并打印直链。
+- **令牌安全**：Gitee 私人令牌只放在 `~/.gitee_token` 或环境变量里，**绝不写进仓库、
+  脚本或 git remote**（脚本用一次性 URL，不落盘）。
+- 空仓库不能设为公开：先推一次 `main`，再把 `private` 改成 `false`。
+- 实测（2026-11-03）：匿名下载 200、8,495,717 字节、SHA-256 与 manifest 一致，UA 为
+  `RasterDial/0.1.10` 也不会被拦。
+
 ## 4. GitHub 源
 
 - 仓库根目录的 `update.json`（`main` 分支）就是回退 manifest。
 - raw 地址：
   `https://raw.githubusercontent.com/kdjdhe/raster-dial/main/update.json`
-- `apkUrls` 第二项指向 GitHub Release 资产：
+- `apkUrls` 第三项指向 GitHub Release 资产：
   `https://github.com/kdjdhe/raster-dial/releases/download/v<version>/raster-dial-<version>-debug.apk`
-- `tools/publish_update.py` 默认生成这个 Release 资产 URL。
+- `tools/publish_update.py` 默认生成 Gitee（第二项）和 GitHub（第三项）的 Release 资产 URL。
 - GitHub raw 有 CDN 缓存，推送后可能几分钟才生效；App 会加 `Cache-Control: no-cache`，
   但 raw CDN 不保证立即刷新。急用可让 App 走成都主源。
 
@@ -166,7 +190,14 @@ tools/sync_chengdu.sh work/raster-dial-0.1.7.apk
      --title "Raster Dial v<version>" --notes-file work/release-notes.md
    ```
 
-6. 上传到成都（同一份 APK 文件，不要在服务器上重新构建）：
+6. 上传到 Gitee（国内镜像，同一份 APK）：
+
+   ```bash
+   export GITEE_TOKEN=...            # 或 ~/.gitee_token
+   tools/sync_gitee.sh work/raster-dial-<version>.apk
+   ```
+
+7. 上传到成都（同一份 APK 文件，不要在服务器上重新构建）：
 
    ```bash
    export CHENGDU_HOST=user@your-server
@@ -174,7 +205,7 @@ tools/sync_chengdu.sh work/raster-dial-0.1.7.apk
    tools/sync_chengdu.sh work/raster-dial-<version>.apk
    ```
 
-7. 验证：
+8. 验证：
 
    ```bash
    curl -fsS https://update.litanghub.top:8443/raster-dial/update.json | jq .
@@ -184,7 +215,7 @@ tools/sync_chengdu.sh work/raster-dial-0.1.7.apk
      -verify_return_error 2>&1 | grep -E "Cipher is|Verify return"
    ```
 
-8. 手机 App 里点“检查更新”，或等 24 小时自动检查。
+9. 手机 App 里点“检查更新”，或等 24 小时自动检查。
 
 ## 7. 签名（必读）
 
@@ -197,11 +228,12 @@ tools/sync_chengdu.sh work/raster-dial-0.1.7.apk
   否则签名会不同，安装会报签名不一致。
 - `update.json` 只校验文件完整性（SHA-256）；APK 签名由 Android 安装器校验。
 
-## 8. 当前状态（2026-11-02）
+## 8. 当前状态（2026-11-03）
 
 - 成都主源 **已上线**：`https://update.litanghub.top:8443/raster-dial/update.json`
   （直连 TLS，Let's Encrypt，DNS-only A 记录；详见 §5）。
-- 仓库 `update.json`（versionCode 8 / 0.1.7）与成都服务器上的清单是同一份，
-  `apkUrls[0]` 指向成都、`apkUrls[1]` 指向 GitHub Release。
-- `BuildConfig.UPDATE_MANIFEST_PRIMARY` 自 0.1.7 起指向成都主源；
-  GitHub 回退始终可用，主源故障不会中断更新链路。
+- 仓库 `update.json`（versionCode 11 / 0.1.10）与成都服务器上的清单是同一份：
+  `apkUrls[0]` 成都、`[1]` Gitee Release、`[2]` GitHub Release。
+- Gitee 镜像 **已上线**：`https://gitee.com/kdjdhe/raster-dial`，v0.1.10 APK 匿名可下。
+- `BuildConfig.UPDATE_MANIFEST_PRIMARY` 自 0.1.7 起指向成都主源；manifest 仍只有
+  成都 + GitHub 两个来源，Gitee 作为 APK 镜像兜底（第三 manifest 源留到 0.1.11）。

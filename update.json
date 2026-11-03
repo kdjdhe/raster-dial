@@ -8,6 +8,7 @@
   "notes": "0.1.10: 修复应用内更新（并发下载互斥、真实进度与阶段、双源各两次尝试、失败原因提示）；建议 0.1.9 用户更新。",
   "apkUrls": [
     "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.10.apk",
+    "https://gitee.com/kdjdhe/raster-dial/releases/download/v0.1.10/raster-dial-0.1.10.apk",
     "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.10/raster-dial-0.1.10.apk"
   ]
 }

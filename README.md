@@ -156,7 +156,7 @@ adb shell am broadcast -n com.raster.dial/.WallDebugReceiver \
 python tools/build_groups.py     # 重新生成竖屏素材 + groups.json
 python tools/build_landscape.py  # 重新生成横屏素材
 python tools/publish_update.py --chengdu-base https://updates.example.com/raster-dial
-CHENGDU_HOST=root@<server-ip> CHENGDU_KEY=~/.ssh/your-deploy-key tools/sync_chengdu.sh work/raster-dial-0.1.8.apk
+CHENGDU_HOST=user@your-server CHENGDU_KEY=~/.ssh/your-deploy-key tools/sync_chengdu.sh work/raster-dial-0.1.8.apk
 ```
 
 素材生成默认读取仓库根目录的 `art` 目录；也可以把 `RASTER_SRC` 指向你的原图目录：

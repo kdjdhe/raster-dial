@@ -76,7 +76,7 @@ buildConfigField("String", "UPDATE_MANIFEST_FALLBACK",
 
 | 项 | 值 |
 |---|---|
-| 公网 IP | `<server-ip>`（阿里云 ECS，Ubuntu 26.04） |
+| 公网 IP | `<server-ip>`（云服务器 ECS，Ubuntu 26.04） |
 | 域名 | `update.litanghub.top`，Cloudflare **DNS-only**（灰云）A 记录 → 上表 IP |
 | 端口 | `8443`；阿里云安全组需放行 TCP 8443 |
 | 证书 | Let's Encrypt：`certbot certonly --dns-cloudflare`（凭据 `/root/.secrets/cloudflare.ini`，DNS-01，已配置自动续期） |
@@ -123,7 +123,7 @@ server {
 ### 5.5 上传
 
 ```bash
-export CHENGDU_HOST=root@<server-ip>
+export CHENGDU_HOST=user@your-server
 export CHENGDU_KEY=~/.ssh/your-deploy-key   # 可选，见 tools/sync_chengdu.sh
 tools/sync_chengdu.sh work/raster-dial-0.1.7.apk
 ```
@@ -167,7 +167,7 @@ tools/sync_chengdu.sh work/raster-dial-0.1.7.apk
 6. 上传到成都（同一份 APK 文件，不要在服务器上重新构建）：
 
    ```bash
-   export CHENGDU_HOST=root@<server-ip>
+   export CHENGDU_HOST=user@your-server
    export CHENGDU_KEY=~/.ssh/your-deploy-key
    tools/sync_chengdu.sh work/raster-dial-<version>.apk
    ```

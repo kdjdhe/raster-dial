@@ -156,7 +156,7 @@ The same code covers 20:9 phones, 19.5:9, 21:9, 16:10 tablets, and folded/unfold
 python tools/build_groups.py     # rebuild portrait assets + groups.json
 python tools/build_landscape.py  # rebuild landscape assets
 python tools/publish_update.py --chengdu-base https://updates.example.com/raster-dial
-CHENGDU_HOST=root@<server-ip> CHENGDU_KEY=~/.ssh/your-deploy-key tools/sync_chengdu.sh work/raster-dial-0.1.8.apk
+CHENGDU_HOST=user@your-server CHENGDU_KEY=~/.ssh/your-deploy-key tools/sync_chengdu.sh work/raster-dial-0.1.8.apk
 ```
 
 Asset generation reads the repository's `art` directory by default; you can also point `RASTER_SRC` at your source-art directory:

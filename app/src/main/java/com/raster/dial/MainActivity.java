@@ -307,20 +307,6 @@ public class MainActivity extends Activity {
         });
         Ui.addWithTop(preview, full, this, 12);
 
-        android.widget.HorizontalScrollView hsv = new android.widget.HorizontalScrollView(this);
-        hsv.setHorizontalScrollBarEnabled(false);
-        hsv.setClipToPadding(false);
-        LinearLayout chips = new LinearLayout(this);
-        chips.setOrientation(LinearLayout.HORIZONTAL);
-        chips.setPadding(0, Ui.dp(this, 2), 0, Ui.dp(this, 2));
-        addChip(chips, "第1张", 0f, 0f);
-        addChip(chips, "1→2 50%", 0.5f, 0f);
-        addChip(chips, "第2张", 1f, 0f);
-        addChip(chips, "2→3 50%", 1.5f, 0f);
-        addChip(chips, "第3张", 2f, 0f);
-        addChip(chips, "斜向 45°", 0.5f, 45f);
-        hsv.addView(chips);
-        Ui.addWithTop(preview, hsv, this, 12);
         root.addView(preview);
 
         // ---------- 壁纸 ----------
@@ -393,16 +379,6 @@ public class MainActivity extends Activity {
         return sw;
     }
 
-    private void addChip(LinearLayout row, String label, float phase, float angleDeg) {
-        TextView chip = Ui.chip(this, label, false);
-        chip.setOnClickListener(v -> preview(phase, angleDeg));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.rightMargin = Ui.dp(this, 8);
-        row.addView(chip, lp);
-    }
-
     private void updateGroupCard() {
         GroupCatalog.Group g = GroupCatalog.find(this, GroupCatalog.currentId(this));
         if (g == null) {
@@ -456,13 +432,6 @@ public class MainActivity extends Activity {
     private int styleIndex() {
         return Math.max(0, Math.min(2,
                 getSharedPreferences("lock", MODE_PRIVATE).getInt("style", 0)));
-    }
-
-    private void preview(float phase, float angleDeg) {
-        Intent i = new Intent(this, LenticularActivity.class);
-        i.putExtra("progress", phase);
-        i.putExtra("angle", (float) Math.toRadians(angleDeg));
-        startActivity(i);
     }
 
     private void openWallpaperPicker() {

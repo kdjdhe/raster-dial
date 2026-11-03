@@ -33,6 +33,9 @@ import java.util.Locale;
  */
 public class LenticularActivity extends Activity {
 
+    /** 预览指定组（不改变当前组）；缺省用当前组。 */
+    public static final String EXTRA_GROUP_ID = "group_id";
+
     private LenticularView view;
     private TiltTracker tracker;
     private TextView dateView;
@@ -76,7 +79,11 @@ public class LenticularActivity extends Activity {
 
         FrameLayout root = new FrameLayout(this);
 
-        String groupId = GroupCatalog.currentId(this);
+        String groupId = getIntent().getStringExtra(EXTRA_GROUP_ID);
+        if (groupId == null || groupId.isEmpty()
+                || GroupCatalog.find(this, groupId) == null) {
+            groupId = GroupCatalog.currentId(this);
+        }
         GroupCatalog.Group group = GroupCatalog.find(this, groupId);
         view = new LenticularView(this, group.id);
         view.setStyle(getSharedPreferences("lock", MODE_PRIVATE).getInt("style", 0));

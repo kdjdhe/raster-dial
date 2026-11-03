@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.12] - 2026-11-03
+
+### Changed
+
+- Main screen preview: removed the fixed-phase shortcuts (第1张 / 1→2 50% / 第2张 /
+  2→3 50% / 第3张 / 斜向 45°); only 全屏预览（传感器） remains.
+- Custom group editor now has its own 全屏预览（传感器） button, previewing the group
+  being edited without switching the current group.
+- Slot ordering is now long-press drag with spring make-way, replacing the ↑/↓
+  buttons: 360ms hold lifts the card (one continuous gesture), neighbours spring to
+  their new slot, 槽位 N labels renumber live with the order, and the order is saved
+  when the card is dropped.
+- Dialogs and text fields now use one shared design (`Ui.dialog` / `Ui.textField`):
+  the new-group naming sheet, delete-group confirm, restore-wallpaper confirm,
+  update prompt and unknown-sources prompt all render as the app's layered dark card
+  instead of the system AlertDialog.
+- versionCode 13 / versionName 0.1.12.
+
 ## [0.1.11] - 2026-11-03
 
 ### Changed

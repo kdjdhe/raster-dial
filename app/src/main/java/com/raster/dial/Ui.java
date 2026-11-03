@@ -3,17 +3,23 @@ package com.raster.dial;
 import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.os.SystemClock;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -386,6 +392,18 @@ public final class Ui {
         });
     }
 
+    /** 取消该 View 上所有进行中的弹簧（拖拽接管前用）。 */
+    public static void cancel(View v) {
+        Map<String, ValueAnimator> m = RUNNING.get(v);
+        if (m == null) {
+            return;
+        }
+        for (ValueAnimator a : new java.util.ArrayList<>(m.values())) {
+            a.cancel();
+        }
+        m.clear();
+    }
+
     /** 弹簧动画到目标 alpha。 */
     public static void alpha(View v, float to) {
         float from = v.getAlpha();
@@ -623,5 +641,115 @@ public final class Ui {
                 dp(a, 620), FrameLayout.LayoutParams.WRAP_CONTENT);
         clp.gravity = Gravity.CENTER_HORIZONTAL;
         wrap.addView(content, clp);
+    }
+
+    // ---------- 对话框 / 输入框：全应用统一材质 ----------
+
+    /** 统一对话框：分层卡片 + 标题/说明 + 可选内容 + 取消/确认（可标红）。 */
+    public static Dialog dialog(Activity a, String title, String message, View content,
+                                String positive, boolean danger, Runnable onPositive,
+                                String negative) {
+        Dialog d = new Dialog(a);
+        d.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout wrap = new LinearLayout(a);
+        wrap.setOrientation(LinearLayout.VERTICAL);
+        int pad = dp(a, 22);
+        wrap.setPadding(pad, pad, pad, pad);
+
+        LinearLayout card = new LinearLayout(a);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(a, 20), dp(a, 20), dp(a, 20), dp(a, 16));
+        card.setBackground(surface(a, CARD, 24));
+
+        card.addView(type(a, title, 20, TEXT, Typeface.BOLD, -0.01f, 0));
+        if (message != null && !message.isEmpty()) {
+            TextView m = type(a, message, 14, SECONDARY, Typeface.NORMAL, 0f, 0);
+            m.setPadding(0, dp(a, 8), 0, 0);
+            m.setLineSpacing(dp(a, 3), 1f);
+            card.addView(m);
+        }
+        if (content != null) {
+            LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            clp.topMargin = dp(a, 16);
+            card.addView(content, clp);
+        }
+
+        LinearLayout row = new LinearLayout(a);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        rlp.topMargin = dp(a, 20);
+        card.addView(row, rlp);
+
+        boolean hasCancel = negative != null && !negative.isEmpty();
+        if (hasCancel) {
+            TextView cancel = button(a, negative, false);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            lp.rightMargin = dp(a, 8);
+            row.addView(cancel, lp);
+            cancel.setOnClickListener(v -> {
+                haptic(v);
+                d.dismiss();
+            });
+        }
+        TextView ok = button(a, positive, true);
+        if (danger) {
+            ok.setBackground(ripple(a, DANGER, 15));
+        }
+        LinearLayout.LayoutParams okLp = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        okLp.leftMargin = hasCancel ? dp(a, 8) : 0;
+        row.addView(ok, okLp);
+        ok.setOnClickListener(v -> {
+            haptic(v);
+            d.dismiss();
+            onPositive.run();
+        });
+
+        wrap.addView(card, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+        d.setContentView(wrap);
+
+        Window win = d.getWindow();
+        if (win != null) {
+            win.setBackgroundDrawable(new ColorDrawable(0));
+            win.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams wlp = win.getAttributes();
+            wlp.dimAmount = 0.62f;
+            int max = Math.min(a.getResources().getDisplayMetrics().widthPixels - dp(a, 44),
+                    dp(a, 420));
+            wlp.width = Math.max(dp(a, 240), max);
+            wlp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+            win.setAttributes(wlp);
+        }
+        d.show();
+        if (content instanceof EditText) {
+            content.requestFocus();
+            if (win != null) {
+                win.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                        | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+            }
+        }
+        return d;
+    }
+
+    /** 统一文本输入框（命名等）。 */
+    public static EditText textField(Context c) {
+        EditText e = new EditText(c);
+        e.setSingleLine(true);
+        e.setInputType(InputType.TYPE_CLASS_TEXT);
+        e.setTextSize(16);
+        e.setTextColor(TEXT);
+        e.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        e.setHintTextColor(TERTIARY);
+        e.setBackground(round(c, CARD_HI, 12));
+        e.setPadding(dp(c, 14), dp(c, 12), dp(c, 14), dp(c, 12));
+        return e;
     }
 }

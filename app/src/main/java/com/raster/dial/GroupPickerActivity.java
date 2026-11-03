@@ -1019,37 +1019,18 @@ public class GroupPickerActivity extends Activity {
     }
 
     private void showCreateDialog() {
-        EditText input = new EditText(this);
-        input.setSingleLine(true);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        input.setTextSize(16);
-        input.setTextColor(Ui.TEXT);
-        input.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        input.setHintTextColor(Ui.TERTIARY);
-        input.setHint("给这组起个名字");
-        input.setBackground(Ui.round(this, Ui.CARD_HI, 12));
-        input.setPadding(Ui.dp(this, 14), Ui.dp(this, 12),
-                Ui.dp(this, 14), Ui.dp(this, 12));
         int customCount = 0;
         for (GroupCatalog.Group g : groups) {
             if (g.custom) {
                 customCount++;
             }
         }
+        EditText input = Ui.textField(this);
+        input.setHint("给这组起个名字");
         input.setText("自定义组 " + (customCount + 1));
         input.setSelectAllOnFocus(true);
-
-        FrameLayout wrap = new FrameLayout(this);
-        int pad = Ui.dp(this, 20);
-        wrap.setPadding(pad, Ui.dp(this, 8), pad, 0);
-        wrap.addView(input, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT));
-
-        new AlertDialog.Builder(this)
-                .setTitle("新建光栅组")
-                .setView(wrap)
-                .setPositiveButton("创建", (d, w) -> {
+        Ui.dialog(this, "新建光栅组", "名称会显示在光栅组选择器里。", input,
+                "创建", false, () -> {
                     String name = input.getText().toString().trim();
                     CustomStore.CustomGroup g = CustomStore.create(this, name);
                     if (g == null) {
@@ -1057,8 +1038,6 @@ public class GroupPickerActivity extends Activity {
                         return;
                     }
                     openEditor(g.id);
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                }, "取消");
     }
 }

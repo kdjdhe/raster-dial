@@ -204,12 +204,8 @@ public final class UpdateChecker {
                 + "大小：" + size
                 + "\n下载后校验 SHA-256，然后打开系统安装器。"
                 + "\n当前版本：" + BuildConfig.VERSION_NAME + " → " + info.versionName;
-        new AlertDialog.Builder(a)
-                .setTitle("发现新版本 " + info.versionName)
-                .setMessage(msg)
-                .setPositiveButton("下载并安装", (d, w) -> downloadAndInstall(a, info))
-                .setNegativeButton("稍后", null)
-                .show();
+        Ui.dialog(a, "发现新版本 " + info.versionName, msg, null,
+                "下载并安装", false, () -> downloadAndInstall(a, info), "稍后");
     }
 
     private static void downloadAndInstall(Activity a, UpdateInfo info) {
@@ -369,19 +365,16 @@ public final class UpdateChecker {
         PackageManager pm = a.getPackageManager();
         if (!pm.canRequestPackageInstalls()) {
             prefs(a).edit().putString(K_PENDING, apk.getAbsolutePath()).apply();
-            new AlertDialog.Builder(a)
-                    .setTitle("允许安装未知应用")
-                    .setMessage("下载完成。请在系统设置中允许 Raster Dial 安装应用，返回后会自动打开安装器。")
-                    .setPositiveButton("打开设置", (d, w) -> {
+            Ui.dialog(a, "允许安装未知应用",
+                    "下载完成。请在系统设置中允许 Raster Dial 安装应用，返回后会自动打开安装器。",
+                    null, "打开设置", false, () -> {
                         try {
                             a.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                                     Uri.parse("package:" + a.getPackageName())));
                         } catch (Exception e) {
                             Toast.makeText(a, "打开设置失败：" + e, Toast.LENGTH_LONG).show();
                         }
-                    })
-                    .setNegativeButton("稍后", null)
-                    .show();
+                    }, "稍后");
             return;
         }
         Uri uri = ApkProvider.uriFor(a, apk);

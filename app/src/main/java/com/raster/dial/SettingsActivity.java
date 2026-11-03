@@ -350,18 +350,15 @@ public class SettingsActivity extends Activity {
     }
 
     private void confirmClearWallpaper() {
-        new AlertDialog.Builder(this)
-                .setMessage("清除当前动态壁纸，恢复系统默认静态壁纸？")
-                .setPositiveButton("清除", (d, w) -> {
+        Ui.dialog(this, "恢复系统默认壁纸？", "当前动态壁纸会被清除。",
+                null, "清除", true, () -> {
                     try {
                         WallpaperManager.getInstance(this).clear();
                         Toast.makeText(this, "已恢复系统默认壁纸", Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
                         Toast.makeText(this, "失败：" + e, Toast.LENGTH_LONG).show();
                     }
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                }, "取消");
     }
 
     @Override

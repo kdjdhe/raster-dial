@@ -8,12 +8,20 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -21,7 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,6 +50,19 @@ public class GroupEditorActivity extends Activity {
     private int pendingIndex = -1;
     private boolean busy;
 
+    // 长按拖拽排序
+    private static final long LONG_PRESS_MS = 360;
+    private final List<LinearLayout> slotCards = new ArrayList<>();
+    private final List<TextView> slotNumViews = new ArrayList<>();
+    private float slotCardH, slotPitch, slotBaseY;
+    private boolean dragLifted, orderChanged;
+    private int dragIndex = -1;
+    private int touchSlop;
+    private ImageView dragGhost;
+    private Bitmap dragGhostBmp;
+    private FrameLayout dragOverlay;
+    private Runnable pendingRebuild;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +81,7 @@ public class GroupEditorActivity extends Activity {
             return;
         }
         slots = group.slots;
+        touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
@@ -96,7 +118,7 @@ public class GroupEditorActivity extends Activity {
         title.setPadding(0, Ui.dp(this, 12), 0, 0);
         head.addView(title);
         TextView sub = Ui.callout(this,
-                "槽位按 1→2→3→1 循环；至少 1 张才能使用。");
+                "槽位按 1→2→3→1 循环；长按卡片可拖动排序；至少 1 张才能使用。");
         sub.setPadding(0, Ui.dp(this, 4), 0, 0);
         head.addView(sub);
         root.addView(head);
@@ -104,18 +126,9 @@ public class GroupEditorActivity extends Activity {
         // ---------- 组名 ----------
         LinearLayout nameCard = Ui.card(this);
         nameCard.addView(Ui.overline(this, "组名"));
-        nameInput = new EditText(this);
+        nameInput = Ui.textField(this);
         nameInput.setText(group.name);
         nameInput.setHint("给这组起个名字");
-        nameInput.setSingleLine(true);
-        nameInput.setInputType(InputType.TYPE_CLASS_TEXT);
-        nameInput.setTextSize(16);
-        nameInput.setTextColor(Ui.TEXT);
-        nameInput.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        nameInput.setHintTextColor(Ui.TERTIARY);
-        nameInput.setBackground(Ui.round(this, Ui.CARD_HI, 12));
-        nameInput.setPadding(Ui.dp(this, 14), Ui.dp(this, 12),
-                Ui.dp(this, 14), Ui.dp(this, 12));
         Ui.addWithTop(nameCard, nameInput, this, 10);
         TextView saveName = Ui.button(this, "保存名称", false);
         saveName.setOnClickListener(v -> {
@@ -147,6 +160,13 @@ public class GroupEditorActivity extends Activity {
             useGroup();
         });
         Ui.addWithTop(root, useButton, this, 10);
+
+        TextView previewButton = Ui.button(this, "全屏预览（传感器）", false);
+        previewButton.setOnClickListener(v -> {
+            Ui.haptic(v);
+            openPreview();
+        });
+        Ui.addWithTop(root, previewButton, this, 10);
 
         // ---------- 分享 / 危险区：分组列表隔离（§16 分组与寻路） ----------
         LinearLayout shareGroup = Ui.group(this);
@@ -247,7 +267,13 @@ public class GroupEditorActivity extends Activity {
     }
 
     private void renderSlots() {
+        renderSlots(true);
+    }
+
+    private void renderSlots(boolean animate) {
         slotsContainer.removeAllViews();
+        slotCards.clear();
+        slotNumViews.clear();
         if (slots.isEmpty()) {
             TextView empty = Ui.callout(this,
                     "还没有图片。点下面“＋ 添加图片”选择第一张。");
@@ -281,7 +307,8 @@ public class GroupEditorActivity extends Activity {
             LinearLayout info = new LinearLayout(this);
             info.setOrientation(LinearLayout.VERTICAL);
             info.setPadding(Ui.dp(this, 12), 0, 0, 0);
-            info.addView(Ui.text(this, "槽位 " + (i + 1), 15, Ui.TEXT, true));
+            TextView slotNo = Ui.text(this, "槽位 " + (i + 1), 15, Ui.TEXT, true);
+            info.addView(slotNo);
             info.addView(Ui.text(this, "旋转 " + s.rotation + "°", 12, Ui.SECONDARY, false));
             top.addView(info);
 
@@ -293,22 +320,20 @@ public class GroupEditorActivity extends Activity {
 
             actions.addView(smallChip("选图", v -> pick(idx)), actionLp(0));
             actions.addView(smallChip("旋转", v -> rotate(idx)), actionLp(1));
-            TextView up = smallChip("↑", v -> move(idx, idx - 1));
-            up.setEnabled(i > 0);
-            up.setAlpha(i > 0 ? 1f : 0.3f);
-            actions.addView(up, actionLp(2));
-            TextView down = smallChip("↓", v -> move(idx, idx + 1));
-            down.setEnabled(i < slots.size() - 1);
-            down.setAlpha(i < slots.size() - 1 ? 1f : 0.3f);
-            actions.addView(down, actionLp(3));
             TextView del = smallChip("删除", v -> deleteSlot(idx));
             del.setEnabled(slots.size() > 1);
             del.setAlpha(slots.size() > 1 ? 1f : 0.3f);
-            actions.addView(del, actionLp(4));
+            actions.addView(del, actionLp(2));
 
             card.addView(actions);
             Ui.addWithTop(slotsContainer, card, this, 10);
-            Ui.appear(card, 60 + idx * 50);
+            card.setTag(i);
+            slotCards.add(card);
+            slotNumViews.add(slotNo);
+            card.setOnTouchListener(new SlotGesture(card));
+            if (animate) {
+                Ui.appear(card, 60 + idx * 50);
+            }
         }
 
         if (addButton != null) {
@@ -338,7 +363,7 @@ public class GroupEditorActivity extends Activity {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         lp.leftMargin = Ui.dp(this, index == 0 ? 0 : 4);
-        lp.rightMargin = Ui.dp(this, index == 4 ? 0 : 4);
+        lp.rightMargin = Ui.dp(this, index == 2 ? 0 : 4);
         return lp;
     }
 
@@ -397,10 +422,8 @@ public class GroupEditorActivity extends Activity {
     }
 
     private void confirmDelete() {
-        new AlertDialog.Builder(this)
-                .setTitle("删除此组？")
-                .setMessage("会删除组名和所有图片，无法恢复。")
-                .setPositiveButton("删除", (d, w) -> {
+        Ui.dialog(this, "删除此组？", "会删除组名和所有图片，无法恢复。",
+                null, "删除", true, () -> {
                     boolean current = group.id.equals(GroupCatalog.currentId(this));
                     if (CustomStore.deleteGroup(this, group.id)) {
                         if (current) {
@@ -411,9 +434,7 @@ public class GroupEditorActivity extends Activity {
                     } else {
                         Toast.makeText(this, "删除失败", Toast.LENGTH_SHORT).show();
                     }
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                }, "取消");
     }
 
     private void pick(int index) {
@@ -506,15 +527,6 @@ public class GroupEditorActivity extends Activity {
         }).start();
     }
 
-    private void move(int from, int to) {
-        if (busy || to < 0 || to >= slots.size()) {
-            return;
-        }
-        Collections.swap(slots, from, to);
-        saveGroup(false);
-        renderSlots();
-    }
-
     private void deleteSlot(int index) {
         if (busy || slots.size() <= 1) {
             return;
@@ -523,5 +535,248 @@ public class GroupEditorActivity extends Activity {
         slots.remove(index);
         saveGroup(false);
         renderSlots();
+    }
+
+    private void openPreview() {
+        if (slots.isEmpty()) {
+            Toast.makeText(this, "先添加图片再预览", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent i = new Intent(this, LenticularActivity.class);
+        i.putExtra(LenticularActivity.EXTRA_GROUP_ID, group.id);
+        startActivity(i);
+    }
+
+    // ---------- 槽位长按拖拽排序（单列弹簧） ----------
+    private void measureSlots() {
+        if (slotCards.isEmpty()) {
+            return;
+        }
+        LinearLayout c0 = slotCards.get(0);
+        slotCardH = c0.getHeight();
+        slotBaseY = c0.getTop();
+        if (slotCards.size() > 1) {
+            slotPitch = slotCards.get(1).getTop() - c0.getTop();
+        } else {
+            slotPitch = slotCardH + Ui.dp(this, 10);
+        }
+    }
+
+    /** 拖拽影子圆角：快照走软件画布，clipToOutline 不生效，用 clipPath 兜底。 */
+    private static final class RoundedImageView extends ImageView {
+        private final Path path = new Path();
+        private final float radiusPx;
+
+        RoundedImageView(Context c, float radiusDp) {
+            super(c);
+            radiusPx = Ui.dp(c, radiusDp);
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int ow, int oh) {
+            super.onSizeChanged(w, h, ow, oh);
+            path.reset();
+            path.addRoundRect(new RectF(0, 0, w, h), radiusPx, radiusPx, Path.Direction.CW);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            canvas.save();
+            canvas.clipPath(path);
+            super.onDraw(canvas);
+            canvas.restore();
+        }
+    }
+
+    private void showGhost(LinearLayout card) {
+        int w = card.getWidth();
+        int h = card.getHeight();
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+        dragGhostBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        card.draw(new Canvas(dragGhostBmp));
+        FrameLayout content = findViewById(android.R.id.content);
+        dragOverlay = new FrameLayout(this);
+        dragOverlay.setClipChildren(false);
+        dragOverlay.setClickable(false);
+        content.addView(dragOverlay, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        int[] cl = new int[2];
+        card.getLocationOnScreen(cl);
+        int[] fl = new int[2];
+        content.getLocationOnScreen(fl);
+        dragGhost = new RoundedImageView(this, 22);
+        dragGhost.setImageBitmap(dragGhostBmp);
+        dragGhost.setScaleType(ImageView.ScaleType.FIT_XY);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(w, h);
+        lp.leftMargin = cl[0] - fl[0];
+        lp.topMargin = cl[1] - fl[1];
+        dragGhost.setElevation(Ui.dp(this, 12));
+        dragOverlay.addView(dragGhost, lp);
+    }
+
+    private void moveSlot(int from, int to) {
+        // 拖拽是“插入”语义（其余卡片整体让位），不是两点交换
+        CustomStore.Slot moved = slots.remove(from);
+        slots.add(to, moved);
+        LinearLayout cv = slotCards.remove(from);
+        slotCards.add(to, cv);
+        TextView nv = slotNumViews.remove(from);
+        slotNumViews.add(to, nv);
+        dragIndex = to;
+        orderChanged = true;
+        for (int i = 0; i < slotCards.size(); i++) {
+            LinearLayout c = slotCards.get(i);
+            if (c == cv) {
+                continue;
+            }
+            int ri = (Integer) c.getTag();
+            Ui.springY(c, (i - ri) * slotPitch);
+        }
+        // 槽位号是位置名：跟随卡片换位实时重编，不能停留在旧序号
+        for (int i = 0; i < slotNumViews.size(); i++) {
+            slotNumViews.get(i).setText("槽位 " + (i + 1));
+        }
+    }
+
+    private void drop(LinearLayout card) {
+        dragLifted = false;
+        int ri = (Integer) card.getTag();
+        float ty = (dragIndex - ri) * slotPitch;
+        if (dragGhost != null && dragOverlay != null) {
+            Ui.springY(dragGhost, ty);
+            Ui.alpha(dragGhost, 0f);
+            final FrameLayout ov = dragOverlay;
+            final ImageView ghost = dragGhost;
+            final Bitmap bmp = dragGhostBmp;
+            ov.postDelayed(() -> {
+                ghost.setImageBitmap(null);
+                if (bmp != null) {
+                    bmp.recycle();
+                }
+                if (ov.getParent() instanceof ViewGroup) {
+                    ((ViewGroup) ov.getParent()).removeView(ov);
+                }
+            }, 240);
+            dragGhost = null;
+            dragOverlay = null;
+            dragGhostBmp = null;
+        }
+        Ui.springY(card, ty);
+        Ui.alpha(card, 1f);
+        Ui.haptic(card);
+        if (orderChanged) {
+            saveGroup(false);
+            // 让位弹簧落定后无感重建（跳过入场动画，避免满屏闪一下）
+            final Runnable rebuild = () -> renderSlots(false);
+            pendingRebuild = rebuild;
+            slotsContainer.postDelayed(rebuild, 360);
+        }
+    }
+
+    private final class SlotGesture implements View.OnTouchListener {
+        private final LinearLayout card;
+        private final Runnable liftRun;
+        private float downX, downY;
+        private boolean liftPending, lifted;
+
+        SlotGesture(LinearLayout card) {
+            this.card = card;
+            this.liftRun = this::lift;
+        }
+
+        private void lift() {
+            if (lifted || dragLifted || busy || slots.size() < 2) {
+                return;
+            }
+            liftPending = false;
+            lifted = true;
+            dragLifted = true;
+            int found = slotCards.indexOf(card);
+            if (found < 0) {
+                lifted = false;
+                dragLifted = false;
+                return;
+            }
+            dragIndex = found;
+            orderChanged = false;
+            Ui.hapticLong(card);
+            Ui.cancel(card);          // 停掉入场弹簧，避免和跟手位移打架
+            card.setAlpha(1f);
+            card.setTranslationY(0f);
+            card.setScaleX(1f);
+            card.setScaleY(1f);
+            measureSlots();
+            showGhost(card);
+            card.setAlpha(0f);
+            card.getParent().requestDisallowInterceptTouchEvent(true);
+            if (pendingRebuild != null) {
+                slotsContainer.removeCallbacks(pendingRebuild);
+            }
+        }
+
+        private void cancelLift() {
+            liftPending = false;
+            card.removeCallbacks(liftRun);
+        }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent ev) {
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downX = ev.getRawX();
+                    downY = ev.getRawY();
+                    liftPending = true;
+                    lifted = false;
+                    card.postDelayed(liftRun, LONG_PRESS_MS);
+                    Ui.springScale(card, 0.98f);
+                    return true;
+                case MotionEvent.ACTION_MOVE: {
+                    float dx = ev.getRawX() - downX;
+                    float dy = ev.getRawY() - downY;
+                    if (!lifted) {
+                        if (Math.abs(dx) > touchSlop || Math.abs(dy) > touchSlop) {
+                            cancelLift();
+                            Ui.springScale(card, 1f);
+                            return false;   // 这是滚动，交还 ScrollView
+                        }
+                        return true;
+                    }
+                    card.setTranslationY(dy);
+                    if (dragGhost != null) {
+                        dragGhost.setTranslationY(dy);
+                    }
+                    int target = Math.max(0, Math.min(slots.size() - 1,
+                            Math.round((card.getTop() + dy - slotBaseY) / slotPitch)));
+                    if (target != dragIndex) {
+                        moveSlot(dragIndex, target);
+                        Ui.hapticTick(card);
+                    }
+                    return true;
+                }
+                case MotionEvent.ACTION_UP:
+                    cancelLift();
+                    if (lifted) {
+                        lifted = false;
+                        drop(card);
+                    } else {
+                        Ui.springScale(card, 1f);
+                    }
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    cancelLift();
+                    if (lifted) {
+                        lifted = false;
+                        drop(card);
+                    } else {
+                        Ui.springScale(card, 1f);
+                    }
+                    return true;
+                default:
+                    return true;
+            }
+        }
     }
 }

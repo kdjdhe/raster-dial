@@ -11,6 +11,34 @@ Android 9+ 的光栅动态壁纸：倾斜手机，画面在 2–3 张图之间�
   <img src="docs/screenshots/home.webp" width="260" alt="桌面上的 Raster Dial 壁纸">
 </p>
 
+## 安全与敏感信息（必读）
+
+> **本仓库是公开仓库。任何情况下都不要把敏感信息提交进来——一次误提交就会永久留在 Git 历史和 GitHub 缓存中，删掉文件并不等于删掉记录。**
+
+**绝对不要提交：**
+
+- SSH 私钥或公钥文件，以及密钥文件名（实际文件如 `id_(ed25519|rsa)` 所示）
+- 服务器公网 IP、`user@host` 登录串、端口和内网拓扑
+- `keystore.properties`、`local.properties`、`*.jks`、签名密码
+- API token、Cloudflare 凭据、证书私钥、cookie
+- 个人身份信息（邮箱、手机号、住址等）
+
+文档和示例一律使用占位符：`user@your-server`、`<server-ip>`、`~/.ssh/your-deploy-key`。
+
+**提交前自查**（有命中就先处理，不要提交）：
+
+```bash
+git grep -nEi 'id_(ed25519|rsa)|PRIVATE KEY|password|passwd|token|secret|[0-9]{1,3}(\.[0-9]{1,3}){3}' -- . ':!*.lock'
+git status --short
+```
+
+**万一误提交：**
+
+1. **先轮换凭据**（换密钥、吊销 token、改密码），按已泄露处理；
+2. 用 `git filter-repo`（或 `git filter-branch`）重写历史，再 `git push --force`；
+3. 联系 [GitHub Support](https://support.github.com/contact) 清理缓存视图——强推后旧提交仍能通过 SHA 直链访问；
+4. 检查 fork、PR 和 Release 资产里是否有副本。
+
 ## 功能亮点
 
 - **过渡线式（默认）**：A/B 两侧之间是一条约 18% 屏宽的软渐变带，不是条带，也不是硬切。

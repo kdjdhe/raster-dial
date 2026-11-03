@@ -11,6 +11,34 @@ A lenticular live wallpaper for Android 9+: tilt the phone and the image transit
   <img src="docs/screenshots/home.webp" width="260" alt="Raster Dial wallpaper on the home screen">
 </p>
 
+## Security and Sensitive Data (read this first)
+
+> **This is a public repository. Never commit sensitive information — a single accidental commit stays in Git history and GitHub caches forever; deleting the file does not delete the record.**
+
+**Never commit:**
+
+- SSH private or public keys, or key filenames (the actual files matching `id_(ed25519|rsa)`)
+- Server public IPs, `user@host` login strings, ports, or internal topology
+- `keystore.properties`, `local.properties`, `*.jks`, signing passwords
+- API tokens, Cloudflare credentials, certificate private keys, cookies
+- Personal identifiers (email, phone number, address)
+
+Always use placeholders in docs and examples: `user@your-server`, `<server-ip>`, `~/.ssh/your-deploy-key`.
+
+**Check before committing** (if anything matches, fix it first — do not commit):
+
+```bash
+git grep -nEi 'id_(ed25519|rsa)|PRIVATE KEY|password|passwd|token|secret|[0-9]{1,3}(\.[0-9]{1,3}){3}' -- . ':!*.lock'
+git status --short
+```
+
+**If you commit something by mistake:**
+
+1. **Rotate the credential first** (replace the key, revoke the token, change the password) — assume it is already leaked;
+2. Rewrite history with `git filter-repo` (or `git filter-branch`) and `git push --force`;
+3. Contact [GitHub Support](https://support.github.com/contact) to clear cached views — old commits stay reachable by SHA after a force-push;
+4. Check forks, pull requests, and release assets for copies.
+
 ## Features
 
 - **Gradient line (default)**: one ~18% screen-width soft gradient band between A and B, not a stripe or a hard cut.

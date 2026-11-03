@@ -371,8 +371,10 @@ public class MainActivity extends Activity {
         Ui.adaptWide(this, scroll, root);
 
         // ---------- 入场：错开上浮（§4 弹簧，可中断） ----------
-        for (int i = 0; i < orderCards.size(); i++) {
-            Ui.appear(orderCards.get(i), i * 60);
+        if (!rebuilding) {
+            for (int i = 0; i < orderCards.size(); i++) {
+                Ui.appear(orderCards.get(i), i * 60);
+            }
         }
         return scroll;
     }
@@ -699,13 +701,17 @@ public class MainActivity extends Activity {
                     if (cardGhost != null) {
                         cardGhost.setTranslationY(dy);
                     }
-                    float center = cardBaseTop.get(card) + cardBaseH.get(card) / 2f + dy;
-                    List<LinearLayout> others = new ArrayList<>(orderCards);
-                    others.remove(card);
+                    // 边缘判定：往下拖用被拖卡片的“下边缘”，往上拖用“上边缘”，
+                    // 越过邻卡中心才换位。大卡片从上沿拿起时，只需拖过下一个
+                    // 模块的一半，而不必把整张卡的中心拖过去。
+                    float slotTop = slotTopFor(orderCards, cardDragIndex);
+                    float edge = dy >= 0f
+                            ? slotTop + cardBaseH.get(card) + dy
+                            : slotTop + dy;
                     int target = 0;
                     float y = cardBlockTop;
-                    for (LinearLayout c : others) {
-                        if (center > y + cardBaseH.get(c) / 2f) {
+                    for (LinearLayout c : orderCards) {
+                        if (c != card && y + cardBaseH.get(c) / 2f < edge) {
                             target++;
                         }
                         y += cardBaseH.get(c) + cardSlotGap;

@@ -29,6 +29,7 @@ public class SettingsActivity extends Activity {
     private ScrollView scrollRef;
     private int builtTheme;
     private int builtRadius;
+    private final java.util.List<View> roundedViews = new java.util.ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +56,7 @@ public class SettingsActivity extends Activity {
     private ScrollView buildContent() {
         builtTheme = Ui.themeIndex;
         builtRadius = Ui.RADIUS;
+        roundedViews.clear();
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         Ui.attachEdgeTick(scroll);
@@ -129,6 +131,7 @@ public class SettingsActivity extends Activity {
         root.addView(sectionLabel("外观"));
 
         LinearLayout lookCard = Ui.group(this);
+        roundedViews.add(lookCard);
         LinearLayout themeRow = new LinearLayout(this);
         themeRow.setOrientation(LinearLayout.VERTICAL);
         themeRow.setPadding(Ui.dp(this, 16), Ui.dp(this, 12),
@@ -203,6 +206,7 @@ public class SettingsActivity extends Activity {
                 }
                 Ui.RADIUS = Math.max(0, Math.min(36, p));
                 radiusValue.setText(p + " dp");
+                applyRadiusLive(p);
                 Ui.hapticTick(sb);
             }
 
@@ -212,8 +216,9 @@ public class SettingsActivity extends Activity {
 
             @Override
             public void onStopTrackingTouch(SeekBar sb) {
-                Ui.setRadius(SettingsActivity.this, sb.getProgress());
-                rebuild();
+                Ui.RADIUS = Math.max(0, Math.min(36, sb.getProgress()));
+                Ui.setRadius(SettingsActivity.this, Ui.RADIUS);
+                builtRadius = Ui.RADIUS;
             }
         });
         LinearLayout.LayoutParams radiusLp = new LinearLayout.LayoutParams(
@@ -239,6 +244,7 @@ public class SettingsActivity extends Activity {
         root.addView(sectionLabel("版本更新"));
 
         LinearLayout updateCard = Ui.group(this);
+        roundedViews.add(updateCard);
         Ui.groupRow(updateCard, infoRow("当前版本",
                 "v" + BuildConfig.VERSION_NAME), this);
         Ui.groupRow(updateCard, descRow(
@@ -252,6 +258,7 @@ public class SettingsActivity extends Activity {
         root.addView(sectionLabel("壁纸"));
 
         LinearLayout wallCard = Ui.group(this);
+        roundedViews.add(wallCard);
         Ui.groupRow(wallCard, switchRow("壁纸调试信息",
                 "在壁纸左下角显示状态行",
                 getSharedPreferences("lock", MODE_PRIVATE)
@@ -277,6 +284,7 @@ public class SettingsActivity extends Activity {
         root.addView(sectionLabel("开源"));
 
         LinearLayout ossCard = Ui.group(this);
+        roundedViews.add(ossCard);
         Ui.groupRow(ossCard, actionRow("↗", "GitHub 项目",
                 "kdjdhe/raster-dial · 源码与发布", v -> {
                     try {
@@ -403,6 +411,18 @@ public class SettingsActivity extends Activity {
             l.onClick(v);
         });
         return row;
+    }
+
+    /** 拖动圆角滑杆时立即改写各卡片背景的圆角，不重建整页。 */
+    private void applyRadiusLive(int dpValue) {
+        int px = Ui.dp(this, Math.max(0, Math.min(36, dpValue)));
+        for (View v : roundedViews) {
+            android.graphics.drawable.Drawable bg = v.getBackground();
+            if (bg instanceof GradientDrawable) {
+                ((GradientDrawable) bg).setCornerRadius(px);
+                v.invalidateOutline();
+            }
+        }
     }
 
     private void confirmClearWallpaper() {

@@ -134,7 +134,7 @@ Or download the [latest release APK](https://github.com/kdjdhe/raster-dial/relea
 | Control | Purpose |
 |---|---|
 | Group | 5 built-in demo groups + multiple custom groups; picker cards; "Chinese name · English" or the custom name |
-| Sensitivity | High 14° / medium 20° / low 30° (half-range angle) |
+| Sensitivity | 0–100% continuous slider (live label), half-range 34° → 8.6°, default 55% ≈ 20° |
 | Wallpaper debug line | Bottom-left: group, portrait/landscape, rotation, `phase`, segment, segment progress, direction, frame time |
 | Invert sweep | Swap the side the gradient sweeps from |
 | Select group | Opens the picker; tap a card; custom cards can be edited / named / deleted |

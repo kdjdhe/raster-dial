@@ -12,6 +12,10 @@
     manifest newer than the installed build; when nothing is newer it still probes
     the mirrors, so a stale primary can no longer report "up to date" while a newer
     release exists elsewhere.
+- Sensitivity is now a continuous slider (灵敏度 0–100%, live label) instead of the
+  three presets 高/中/低. Mapping: 0–100% <-> half-range angle 0.60–0.15 rad
+  (about 34° down to 8.6°); the previous presets (0.24 / 0.35 / 0.52 rad) are all
+  reachable and the default lands at 55% (~20°). Haptic tick per 1% step.
 - versionCode 12 / versionName 0.1.11.
 
 ## [0.1.10] - 2026-11-02

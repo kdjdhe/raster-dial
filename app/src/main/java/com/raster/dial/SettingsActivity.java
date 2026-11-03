@@ -70,7 +70,7 @@ public class SettingsActivity extends Activity {
 
         TextView back = new TextView(this);
         back.setText("‹");
-        back.setTextSize(22);
+        Ui.glyph(back, 22);
         back.setTextColor(Ui.TEXT);
         back.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         back.setGravity(Gravity.CENTER);
@@ -327,6 +327,7 @@ public class SettingsActivity extends Activity {
         Ui.pressable(row);
 
         TextView ic = Ui.text(this, glyph, 18, Ui.SECONDARY, false);
+        Ui.glyph(ic, 18);
         ic.setGravity(Gravity.CENTER);
         row.addView(ic, new LinearLayout.LayoutParams(Ui.dp(this, 32),
                 LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -341,7 +342,9 @@ public class SettingsActivity extends Activity {
         row.addView(col, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
-        row.addView(Ui.text(this, "›", 18, Ui.TERTIARY, false));
+        TextView chev = Ui.text(this, "›", 18, Ui.TERTIARY, false);
+        Ui.glyph(chev, 18);
+        row.addView(chev);
         row.setOnClickListener(v -> {
             Ui.haptic(v);
             l.onClick(v);

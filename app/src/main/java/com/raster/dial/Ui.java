@@ -13,6 +13,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.os.SystemClock;
 import android.text.InputType;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -240,6 +241,11 @@ public final class Ui {
         return pressable(t);
     }
 
+    /** 装饰字形（‹ × ⚙ ✓ › ＋）：固定 dp 字号，不随系统字号放大而被小容器裁切。 */
+    public static void glyph(TextView t, float dpSize) {
+        t.setTextSize(TypedValue.COMPLEX_UNIT_DIP, dpSize);
+    }
+
     /** 设置式列表行：标题 + 可选值 + ›；分组容器负责圆角裁切。 */
     public static LinearLayout listRow(Context c, String title, String tail, boolean danger) {
         LinearLayout row = new LinearLayout(c);
@@ -268,6 +274,7 @@ public final class Ui {
 
         TextView chevron = type(c, "›", 18, danger ? DANGER : TERTIARY,
                 Typeface.NORMAL, 0f, 0);
+        glyph(chevron, 18);
         row.addView(chevron, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -535,9 +542,10 @@ public final class Ui {
                     idx == initial ? Typeface.BOLD : Typeface.NORMAL, 0f, 0);
             label.setGravity(Gravity.CENTER);
             label.setClickable(true);
+            label.setMinHeight(dp(c, 34));
             labels[i] = label;
             row.addView(label, new LinearLayout.LayoutParams(
-                    0, dp(c, 34), 1f));
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         }
         stage.addView(row, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,

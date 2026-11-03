@@ -14,6 +14,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -46,7 +47,6 @@ import java.util.Map;
 public class GroupPickerActivity extends Activity {
 
     private static final int REQ_IMPORT = 71;
-    private static final int CARD_H = 296;   // 卡片统一高度（dp），排序几何依赖它
     private static final int ROW_GAP = 14;   // 行距（dp）
     private static final int COL_GAP = 12;   // 列距（dp，左右 margin 各 6）
     private static final int LONG_PRESS_MS = 380;
@@ -111,7 +111,7 @@ public class GroupPickerActivity extends Activity {
 
         TextView back = new TextView(this);
         back.setText("‹");
-        back.setTextSize(22);
+        Ui.glyph(back, 22);
         back.setTextColor(Ui.TEXT);
         back.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         back.setGravity(Gravity.CENTER);
@@ -137,14 +137,17 @@ public class GroupPickerActivity extends Activity {
         root.addView(head);
 
         // ---------- 搜索 + 导入 ----------
-        LinearLayout searchRow = new LinearLayout(this);
-        searchRow.setOrientation(LinearLayout.HORIZONTAL);
-        searchRow.setGravity(Gravity.CENTER_VERTICAL);
+        // 系统字号放到很大时，搜索框独占一行，避免提示语被按钮挤压裁切
+        boolean stackSearch = getResources().getConfiguration().fontScale >= 1.5f;
+        LinearLayout searchBox = new LinearLayout(this);
+        searchBox.setOrientation(stackSearch
+                ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        searchBox.setGravity(stackSearch ? Gravity.START : Gravity.CENTER_VERTICAL);
         LinearLayout.LayoutParams srlp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
         srlp.topMargin = Ui.dp(this, 16);
-        root.addView(searchRow, srlp);
+        root.addView(searchBox, srlp);
 
         searchInput = new EditText(this);
         searchInput.setSingleLine(true);
@@ -172,30 +175,53 @@ public class GroupPickerActivity extends Activity {
                 renderGroups();
             }
         });
-        searchRow.addView(searchInput, new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
         importBtn = Ui.chip(this, "导入", false);
-        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        ilp.leftMargin = Ui.dp(this, 8);
         importBtn.setOnClickListener(v -> {
             Ui.haptic(v);
             startImport();
         });
-        searchRow.addView(importBtn, ilp);
 
         shareBtn = Ui.chip(this, "分享", false);
-        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        slp.leftMargin = Ui.dp(this, 8);
         shareBtn.setOnClickListener(v -> {
             Ui.haptic(v);
             enterShare();
         });
-        searchRow.addView(shareBtn, slp);
+
+        if (stackSearch) {
+            searchBox.addView(searchInput, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            LinearLayout btnRow = new LinearLayout(this);
+            btnRow.setOrientation(LinearLayout.HORIZONTAL);
+            btnRow.setGravity(Gravity.END);
+            LinearLayout.LayoutParams brp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            brp.topMargin = Ui.dp(this, 8);
+            btnRow.addView(importBtn, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            slp.leftMargin = Ui.dp(this, 8);
+            btnRow.addView(shareBtn, slp);
+            searchBox.addView(btnRow, brp);
+        } else {
+            searchBox.addView(searchInput, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            ilp.leftMargin = Ui.dp(this, 8);
+            searchBox.addView(importBtn, ilp);
+            LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            slp.leftMargin = Ui.dp(this, 8);
+            searchBox.addView(shareBtn, slp);
+        }
 
         // 多选分享的操作行（默认隐藏）
         shareActions = new LinearLayout(this);
@@ -223,7 +249,7 @@ public class GroupPickerActivity extends Activity {
         setContentView(scroll);
 
         Ui.appear(head, 0);
-        Ui.appear(searchRow, 40);
+        Ui.appear(searchBox, 40);
     }
 
     @Override
@@ -349,18 +375,14 @@ public class GroupPickerActivity extends Activity {
                         card.setOnTouchListener(new CardGesture(card, g));
                         gridCards.add(card);
                     }
-                    LinearLayout.LayoutParams lp = cellLp(j % gridCols);
-                    lp.height = Ui.dp(this, CARD_H);
-                    row.addView(card, lp);
+                    row.addView(card, cellLp(j % gridCols));
                     if (animate) {
                         Ui.appear(card, 40 + cardIndex * 50);
                     }
                     cardIndex++;
                 } else if (j < totalTiles) {
                     LinearLayout tile = newTileCard();
-                    LinearLayout.LayoutParams lp = cellLp(j % gridCols);
-                    lp.height = Ui.dp(this, CARD_H);
-                    row.addView(tile, lp);
+                    row.addView(tile, cellLp(j % gridCols));
                     if (animate) {
                         Ui.appear(tile, 40 + cardIndex * 50);
                     }
@@ -370,6 +392,42 @@ public class GroupPickerActivity extends Activity {
                 }
             }
         }
+        equalizeCellHeights();
+    }
+
+    /** 卡片高度=内容高度，再统一到本屏最高者：
+     *  系统字号放大时文字不裁切，同时保证拖拽排序的节距一致。 */
+    private void equalizeCellHeights() {
+        cardsContainer.post(() -> {
+            int max = 0;
+            List<View> cells = new ArrayList<>();
+            for (int i = 0; i < cardsContainer.getChildCount(); i++) {
+                View child = cardsContainer.getChildAt(i);
+                if (!(child instanceof LinearLayout)) {
+                    continue;
+                }
+                LinearLayout row = (LinearLayout) child;
+                for (int j = 0; j < row.getChildCount(); j++) {
+                    View cell = row.getChildAt(j);
+                    if (!(cell.getLayoutParams() instanceof LinearLayout.LayoutParams)) {
+                        continue;
+                    }
+                    cells.add(cell);
+                    max = Math.max(max, cell.getHeight());
+                }
+            }
+            if (max <= 0) {
+                return;
+            }
+            for (View cell : cells) {
+                LinearLayout.LayoutParams lp =
+                        (LinearLayout.LayoutParams) cell.getLayoutParams();
+                if (lp.height != max) {
+                    lp.height = max;
+                    cell.setLayoutParams(lp);
+                }
+            }
+        });
     }
 
     /** 当前选中的判定：普通模式 = 当前组；分享模式 = 已勾选。 */
@@ -434,6 +492,7 @@ public class GroupPickerActivity extends Activity {
         if (selected) {
             FrameLayout badge = new FrameLayout(this);
             TextView check = Ui.text(this, "✓", 12, Ui.ON_ACCENT, true);
+            Ui.glyph(check, 12);
             check.setGravity(Gravity.CENTER);
             badge.addView(check, new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
@@ -455,7 +514,9 @@ public class GroupPickerActivity extends Activity {
         info.setPadding(Ui.dp(this, 6), Ui.dp(this, 10), Ui.dp(this, 2), 0);
         TextView name = Ui.text(this, g.displayName(), 14,
                 selected ? Ui.TEXT : Ui.SECONDARY, selected);
-        name.setMaxLines(2);
+        float fs = getResources().getConfiguration().fontScale;
+        name.setMaxLines(fs >= 1.6f ? 4 : fs >= 1.2f ? 3 : 2);
+        name.setEllipsize(TextUtils.TruncateAt.END);
         info.addView(name, new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         card.addView(info);
@@ -660,9 +721,12 @@ public class GroupPickerActivity extends Activity {
         Ui.pressable(card);
 
         TextView plus = Ui.text(this, "＋", 26, Ui.SECONDARY, false);
+        Ui.glyph(plus, 26);
         plus.setGravity(Gravity.CENTER);
+        plus.setMinHeight(Ui.dp(this, 44));
         card.addView(plus, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 44)));
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
 
         TextView label = Ui.callout(this, "新建光栅组");
         label.setGravity(Gravity.CENTER);

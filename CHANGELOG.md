@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.13] - 2026-11-03
+
+### Fixed
+
+- Layout now respects the system font size; labels no longer clip when the system
+  font is enlarged (checked at 1.5x and 2.0x on the emulator):
+  - Group picker cards size to their content, then equalize to the tallest card in
+    the grid. Names, meta lines and the 编辑 chip stay visible, and drag sorting still
+    has a uniform pitch because every card is the same height.
+  - Card names allow 3 lines at >=1.2x and 4 lines at >=1.6x, ending with an ellipsis
+    instead of hard clipping.
+  - Segmented controls use a minimum row height instead of a fixed 34dp, so 过渡线 /
+    百叶窗 / 类OriginOS and the axis labels never clip.
+  - Decorative glyphs (‹ × ⚙ ✓ › ＋) keep a fixed dp size so they cannot overflow
+    their circular buttons; the full-screen preview clock is dp-sized and its hint
+    pill is width-capped so it wraps.
+  - At font scale >=1.5 the picker search box takes a full row with 导入 / 分享 below
+    it, so the hint and query are never squeezed by the buttons.
+- versionCode 14 / versionName 0.1.13.
+
 ## [0.1.12] - 2026-11-03
 
 ### Changed

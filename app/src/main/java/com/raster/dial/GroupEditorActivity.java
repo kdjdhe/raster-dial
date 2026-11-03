@@ -100,7 +100,7 @@ public class GroupEditorActivity extends Activity {
         head.setOrientation(LinearLayout.VERTICAL);
         TextView back = new TextView(this);
         back.setText("‹");
-        back.setTextSize(22);
+        Ui.glyph(back, 22);
         back.setTextColor(Ui.TEXT);
         back.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         back.setGravity(Gravity.CENTER);

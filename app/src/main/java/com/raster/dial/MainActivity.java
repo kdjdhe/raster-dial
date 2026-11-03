@@ -95,7 +95,7 @@ public class MainActivity extends Activity {
 
         TextView settingsBtn = new TextView(this);
         settingsBtn.setText("⚙");
-        settingsBtn.setTextSize(18);
+        Ui.glyph(settingsBtn, 18);
         settingsBtn.setTextColor(Ui.TEXT);
         settingsBtn.setGravity(Gravity.CENTER);
         int gb = Ui.dp(this, 40);

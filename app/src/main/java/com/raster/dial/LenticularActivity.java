@@ -110,7 +110,7 @@ public class LenticularActivity extends Activity {
         TextClock clock = new TextClock(this);
         clock.setFormat24Hour("HH:mm");
         clock.setFormat12Hour("HH:mm");
-        clock.setTextSize(76);
+        Ui.glyph(clock, 76);
         clock.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
         clock.setLetterSpacing(-0.02f);
         clock.setTextColor(Color.WHITE);
@@ -160,6 +160,7 @@ public class LenticularActivity extends Activity {
         hint.setTextColor(0xD9FFFFFF);
         hint.setGravity(Gravity.CENTER);
         hint.setPadding(dp(16), dp(9), dp(16), dp(9));
+        hint.setMaxWidth(getResources().getDisplayMetrics().widthPixels - dp(32));
         // 半透明胶囊提示条（材质浮层，压暗保证可读）
         GradientDrawable pill = new GradientDrawable();
         pill.setColor(0x66000000);
@@ -174,7 +175,7 @@ public class LenticularActivity extends Activity {
 
         TextView close = new TextView(this);
         close.setText("×");
-        close.setTextSize(22);
+        Ui.glyph(close, 22);
         close.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         close.setTextColor(0xE6FFFFFF);
         close.setGravity(Gravity.CENTER);

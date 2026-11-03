@@ -439,13 +439,13 @@ public class GroupPickerActivity extends Activity {
     private void applyCardBg(LinearLayout card, boolean selected, boolean lifted) {
         GradientDrawable bg;
         if (lifted) {
-            bg = Ui.surface(this, Ui.CARD_HI, 20);
+            bg = Ui.surface(this, Ui.CARD_HI, Ui.RADIUS);
             bg.setStroke(Ui.dp(this, 2), Ui.ACCENT);
         } else if (selected) {
-            bg = Ui.round(this, Ui.ACCENT_DIM, 20);
+            bg = Ui.round(this, Ui.ACCENT_DIM, Ui.RADIUS);
             bg.setStroke(Ui.dp(this, 2), Ui.ACCENT);
         } else {
-            bg = Ui.round(this, Ui.CARD, 20);
+            bg = Ui.round(this, Ui.CARD, Ui.RADIUS);
             bg.setStroke(Ui.dp(this, 1), Ui.HAIRLINE);
         }
         card.setBackground(bg);
@@ -713,7 +713,7 @@ public class GroupPickerActivity extends Activity {
                 Ui.dp(this, 8), Ui.dp(this, 12));
         GradientDrawable dash = new GradientDrawable();
         dash.setColor(0x0FFFFFFF);
-        dash.setCornerRadius(Ui.dp(this, 20));
+        dash.setCornerRadius(Ui.dp(this, Ui.RADIUS));
         dash.setStroke(Ui.dp(this, 1), 0x30FFFFFF, Ui.dp(this, 5), Ui.dp(this, 5));
         card.setBackground(dash);
         card.setClickable(true);

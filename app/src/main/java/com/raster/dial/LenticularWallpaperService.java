@@ -59,7 +59,8 @@ public class LenticularWallpaperService extends WallpaperService {
         private int styleMode;              // 0 过渡线 / 1 百叶窗 / 2 类OriginOS
         private int axisLine;               // 0 全向 / 1 仅横向 / 2 仅竖向
         private float eyeStrength;          // 护眼强度（常驻低透光衰减，0=关闭）
-        private int axisH;                  // 0 横向 / 1 竖向（横向风格）
+        private int axisH;                  // 0 自动 / 1 横向 / 2 竖向（百叶窗/类OriginOS）
+        private boolean autoVertical;       // 自动轴：带迟滞，避免对角线来回抖
         private int lastStyle = -1;
         private final Paint dividerPaint = new Paint();
         private final HStepper hStep = new HStepper();
@@ -226,7 +227,7 @@ public class LenticularWallpaperService extends WallpaperService {
             debug = sp.getBoolean("wall_debug", true);
             styleMode = Math.max(0, Math.min(2, sp.getInt("style", 0)));
             axisLine = Math.max(0, Math.min(2, sp.getInt("axis_line", 0)));
-            axisH = Math.max(0, Math.min(1, sp.getInt("axis_h", 0)));
+            axisH = Prefs.axisH(LenticularWallpaperService.this);
             eyeStrength = Math.max(0f, Math.min(0.30f,
                     sp.getFloat("eye_care_strength", 0f)));
             if (styleMode != lastStyle) {
@@ -314,7 +315,23 @@ public class LenticularWallpaperService extends WallpaperService {
                 if (styleMode >= 1) {
                     // 横向风格：瞬时倾角映射场景，触发后 100ms 一锤子走完
                     long now = SystemClock.uptimeMillis();
-                    boolean vertical = axisH == 1;
+                    boolean vertical;
+                    if (axisH == 1) {
+                        vertical = false;
+                    } else if (axisH == 2) {
+                        vertical = true;
+                    } else {
+                        float ax = Math.abs(hx);
+                        float ay = Math.abs(hy);
+                        if (autoVertical) {
+                            if (ax > ay * 1.15f) {
+                                autoVertical = false;
+                            }
+                        } else if (ay > ax * 1.15f) {
+                            autoVertical = true;
+                        }
+                        vertical = autoVertical;
+                    }
                     float hIn = overridePhase >= 0f ? overridePhase * SCENE_HINT
                             : (vertical ? hy : hx);
                     float soft = styleMode == 2 ? 0.32f : 0.09f;

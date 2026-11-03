@@ -97,7 +97,8 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
     private volatile float phaseX = 0f, phaseY = 0f;
     private volatile float hx = 0f, hy = 0f;   // 归一化瞬时单轴倾角
     private volatile int axisLine = 0;  // 0 全向 / 1 仅X / 2 仅Y
-    private volatile int axisH = 0;     // 0 横向 / 1 竖向（横向风格）
+    private volatile int axisH = 0;     // 0 自动 / 1 横向 / 2 竖向（横向风格）
+    private boolean autoVertical;       // 自动轴：带迟滞
     private volatile float eyeStrength; // 护眼强度（常驻低透光衰减，0=关闭）
     private volatile float dirX = 1f, dirY = 0f;
     private volatile int style = 0;   // 0 过渡线 / 1 百叶窗 / 2 类OriginOS
@@ -140,7 +141,7 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
 
     public void setAxis(int axisLine, int axisH) {
         this.axisLine = Math.max(0, Math.min(2, axisLine));
-        this.axisH = Math.max(0, Math.min(1, axisH));
+        this.axisH = Math.max(0, Math.min(2, axisH));
     }
 
     public void setEyeStrength(float strength) {
@@ -222,14 +223,31 @@ public class LenticularView extends GLSurfaceView implements GLSurfaceView.Rende
         if (style >= 1) {
             // 横向风格：触发即 100ms 走完；轴可配横向/竖向
             long now = android.os.SystemClock.uptimeMillis();
-            float hz = axisH == 1 ? hy : hx;
-            verticalU = axisH;
+            boolean vertical;
+            if (axisH == 1) {
+                vertical = false;
+            } else if (axisH == 2) {
+                vertical = true;
+            } else {
+                float ax = Math.abs(hx);
+                float ay = Math.abs(hy);
+                if (autoVertical) {
+                    if (ax > ay * 1.15f) {
+                        autoVertical = false;
+                    }
+                } else if (ay > ax * 1.15f) {
+                    autoVertical = true;
+                }
+                vertical = autoVertical;
+            }
+            float hz = vertical ? hy : hx;
+            verticalU = vertical ? 1f : 0f;
             if (hStep.update(hz, now)) {
                 seg = hStep.fromMod(n);
                 next = hStep.segMod(n);
                 frac = hStep.progress(now);
-                ux = axisH == 1 ? 0f : hStep.dir;
-                uy = axisH == 1 ? hStep.dir : 0f;
+                ux = vertical ? 0f : hStep.dir;
+                uy = vertical ? hStep.dir : 0f;
             } else {
                 seg = hStep.segMod(n);
                 next = seg;

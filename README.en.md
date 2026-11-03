@@ -26,6 +26,7 @@ A lenticular live wallpaper for Android 9+: tilt the phone and the image transit
 - **Wallpaper only**: no lock-screen takeover, no flashing, no boot service.
 - **In-app updates**: Chengdu primary → Gitee secondary → GitHub backup; SHA-256 verification; system installer.
 - **6 themes**: Obsidian / Glacier / Moss / Violet / Crimson / Gold; one-tap switch, remembered.
+- **Customizable UI**: long-press drag the four main cards to reorder; card corner-radius slider (0–36dp); swipe the segmented controls to switch style/axis; 百叶窗 / 类OriginOS axis gains 自动 (auto).
 - **System font scaling**: labels stay fully visible from 0.85x to 2.0x; cards, segmented controls and dialogs grow with the text, decorative glyphs keep a fixed dp size.
 - **Long-press drag reordering**: lift a card in the picker, 1:1 tracking, spring make-way, per-slot haptic.
 - **Search / export & import**: search groups in the picker; bundle a custom group to share, import others'.

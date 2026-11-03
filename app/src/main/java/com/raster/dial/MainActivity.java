@@ -8,21 +8,30 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
-import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends Activity {
 
@@ -37,6 +46,20 @@ public class MainActivity extends Activity {
     private static final float RANGE_MAX = 0.60f;   // 0%：最迟钝
     private LinearLayout axisHost;
 
+    // 主屏四张卡片的拖动排序
+    private static final long LONG_PRESS_MS = 360;
+    private LinearLayout cardRoot;
+    private final List<LinearLayout> orderCards = new ArrayList<>();
+    private final Map<String, LinearLayout> cardMap = new HashMap<>();
+    private final Map<LinearLayout, Integer> cardBaseTop = new HashMap<>();
+    private final Map<LinearLayout, Integer> cardBaseH = new HashMap<>();
+    private boolean cardDragLifted, cardOrderChanged;
+    private int cardDragIndex = -1;
+    private int touchSlop;
+    private ImageView cardGhost;
+    private Bitmap cardGhostBmp;
+    private FrameLayout cardGhostOverlay;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +73,7 @@ public class MainActivity extends Activity {
     private boolean rebuilding;
     private ScrollView scrollRef;
     private int builtTheme;
+    private int builtRadius;
 
     /** 原地换色：重建视图但不重播入场动画，并保持滚动位置（切主题用）。 */
     private void rebuild() {
@@ -67,6 +91,8 @@ public class MainActivity extends Activity {
 
     private ScrollView buildContent() {
         builtTheme = Ui.themeIndex;
+        builtRadius = Ui.RADIUS;
+        touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         Ui.attachEdgeTick(scroll);
@@ -116,7 +142,7 @@ public class MainActivity extends Activity {
         // ---------- 当前组 hero 卡 ----------
         LinearLayout hero = Ui.card(this);
         hero.setPadding(0, 0, 0, 0);
-        hero.setBackground(Ui.surface(this, Ui.CARD, 22));
+        hero.setBackground(Ui.surface(this, Ui.CARD, Ui.RADIUS));
 
         FrameLayout heroMedia = new FrameLayout(this);
         groupThumb = new ImageView(this);
@@ -147,7 +173,7 @@ public class MainActivity extends Activity {
 
         LinearLayout heroMediaClip = new LinearLayout(this);
         heroMediaClip.setOrientation(LinearLayout.VERTICAL);
-        heroMediaClip.setBackground(Ui.round(this, Ui.CARD, 22));
+        heroMediaClip.setBackground(Ui.round(this, Ui.CARD, Ui.RADIUS));
         heroMediaClip.setClipToOutline(true);
         heroMediaClip.addView(heroMedia);
         hero.addView(heroMediaClip, new LinearLayout.LayoutParams(
@@ -188,7 +214,6 @@ public class MainActivity extends Activity {
             Ui.haptic(v);
             openPicker();
         });
-        root.addView(hero);
 
         // ---------- 效果 ----------
         LinearLayout effect = Ui.card(this);
@@ -215,7 +240,7 @@ public class MainActivity extends Activity {
                 getSharedPreferences("lock", MODE_PRIVATE).edit()
                         .putFloat("sens", sensForPercent(p)).apply();
                 sensLabel.setText("灵敏度 " + p + "%");
-                Ui.hapticTick(sb);
+                Ui.hapticTick(sb, p / 100f);
             }
 
             @Override
@@ -295,7 +320,6 @@ public class MainActivity extends Activity {
         blp.topMargin = Ui.dp(this, 4);
         eyeRow.addView(eyeBar, blp);
         effect.addView(eyeRow);
-        root.addView(effect);
 
         // ---------- 预览 ----------
         LinearLayout preview = Ui.card(this);
@@ -307,7 +331,6 @@ public class MainActivity extends Activity {
         });
         Ui.addWithTop(preview, full, this, 12);
 
-        root.addView(preview);
 
         // ---------- 壁纸 ----------
         LinearLayout wall = Ui.card(this);
@@ -318,20 +341,39 @@ public class MainActivity extends Activity {
             openWallpaperPicker();
         });
         Ui.addWithTop(wall, set, this, 12);
-        root.addView(wall);
 
+        TextView wallWarn = Ui.callout(this,
+                "设为光栅壁纸之后将会覆盖原有壁纸，在设置里面恢复系统默认壁纸几乎必定会丢失原有壁纸。\n"
+                        + "如果你很喜欢现在的壁纸，请做好备份或者放弃使用本App。\n"
+                        + "能否同时设置成光栅锁屏取决于机型 详情参见项目README。");
+        wallWarn.setLineSpacing(Ui.dp(this, 3), 1f);
+        Ui.addWithTop(wall, wallWarn, this, 14);
 
-
+        // 四张卡片按上次拖拽的顺序排列；长按空白处拖动排序
+        cardRoot = root;
+        cardMap.put("hero", hero);
+        cardMap.put("effect", effect);
+        cardMap.put("preview", preview);
+        cardMap.put("wall", wall);
+        orderCards.clear();
+        for (String key : Prefs.cardOrder(this)) {
+            LinearLayout card = cardMap.get(key);
+            if (card == null) {
+                continue;
+            }
+            orderCards.add(card);
+            root.addView(card);
+            card.setOnTouchListener(new CardDragGesture(card));
+        }
 
 
         updateGroupCard();
         Ui.adaptWide(this, scroll, root);
 
         // ---------- 入场：错开上浮（§4 弹簧，可中断） ----------
-        Ui.appear(hero, 0);
-        Ui.appear(effect, 60);
-        Ui.appear(preview, 120);
-        Ui.appear(wall, 180);
+        for (int i = 0; i < orderCards.size(); i++) {
+            Ui.appear(orderCards.get(i), i * 60);
+        }
         return scroll;
     }
 
@@ -413,9 +455,8 @@ public class MainActivity extends Activity {
                             .edit().putInt("axis_line", i).apply()));
         } else {
             axisHost.addView(Ui.segmented(this,
-                    new String[]{"横向", "竖向"},
-                    axisHIndex(), i -> getSharedPreferences("lock", MODE_PRIVATE)
-                            .edit().putInt("axis_h", i).apply()));
+                    new String[]{"自动", "横向", "竖向"},
+                    axisHIndex(), i -> Prefs.setAxisH(this, i)));
         }
     }
 
@@ -425,8 +466,7 @@ public class MainActivity extends Activity {
     }
 
     private int axisHIndex() {
-        return Math.max(0, Math.min(1,
-                getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_h", 0)));
+        return Prefs.axisH(this);
     }
 
     private int styleIndex() {
@@ -450,10 +490,254 @@ public class MainActivity extends Activity {
         super.onResume();
         UpdateChecker.autoCheck(this);
         UpdateChecker.resumePendingInstall(this);
-        if (Ui.themeIndex != builtTheme) {
+        if (Ui.themeIndex != builtTheme || Ui.RADIUS != builtRadius) {
             rebuild();
             return;
         }
         updateGroupCard();
+    }
+
+    // ---------- 主屏卡片长按拖动排序（高度不等的弹簧让位） ----------
+    private float cardBlockTop;
+    private float cardSlotGap;
+
+    private String keyOf(LinearLayout card) {
+        for (Map.Entry<String, LinearLayout> e : cardMap.entrySet()) {
+            if (e.getValue() == card) {
+                return e.getKey();
+            }
+        }
+        return "hero";
+    }
+
+    private float slotTopFor(List<LinearLayout> order, int index) {
+        float y = cardBlockTop;
+        for (int i = 0; i < index; i++) {
+            y += cardBaseH.get(order.get(i)) + cardSlotGap;
+        }
+        return y;
+    }
+
+    private void liftCard(LinearLayout card) {
+        if (cardDragLifted || orderCards.size() < 2) {
+            return;
+        }
+        cardDragIndex = orderCards.indexOf(card);
+        if (cardDragIndex < 0) {
+            return;
+        }
+        cardDragLifted = true;
+        cardOrderChanged = false;
+        for (LinearLayout c : orderCards) {
+            Ui.cancel(c);
+            c.setTranslationY(0f);
+            c.setAlpha(1f);
+        }
+        cardBaseTop.clear();
+        cardBaseH.clear();
+        for (LinearLayout c : orderCards) {
+            cardBaseTop.put(c, c.getTop());
+            cardBaseH.put(c, c.getHeight());
+        }
+        cardBlockTop = cardBaseTop.get(orderCards.get(0));
+        cardSlotGap = orderCards.size() > 1
+                ? cardBaseTop.get(orderCards.get(1))
+                - cardBaseTop.get(orderCards.get(0))
+                - cardBaseH.get(orderCards.get(0))
+                : 0f;
+        if (cardSlotGap < 0f) {
+            cardSlotGap = 0f;
+        }
+        Ui.hapticLong(card);
+        showCardGhost(card);
+        card.setAlpha(0f);
+        card.getParent().requestDisallowInterceptTouchEvent(true);
+    }
+
+    private void showCardGhost(LinearLayout card) {
+        int w = card.getWidth();
+        int h = card.getHeight();
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+        cardGhostBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        card.draw(new Canvas(cardGhostBmp));
+        FrameLayout content = findViewById(android.R.id.content);
+        cardGhostOverlay = new FrameLayout(this);
+        cardGhostOverlay.setClipChildren(false);
+        cardGhostOverlay.setClickable(false);
+        content.addView(cardGhostOverlay, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        int[] cl = new int[2];
+        card.getLocationOnScreen(cl);
+        int[] fl = new int[2];
+        content.getLocationOnScreen(fl);
+        cardGhost = new ImageView(this);
+        cardGhost.setImageBitmap(cardGhostBmp);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(w, h);
+        lp.leftMargin = cl[0] - fl[0];
+        lp.topMargin = cl[1] - fl[1];
+        cardGhost.setElevation(Ui.dp(this, 12));
+        cardGhostOverlay.addView(cardGhost, lp);
+    }
+
+    private void moveCardTo(int target) {
+        LinearLayout dragged = orderCards.get(cardDragIndex);
+        List<LinearLayout> others = new ArrayList<>(orderCards);
+        others.remove(dragged);
+        int tgt = Math.max(0, Math.min(others.size(), target));
+        if (tgt == cardDragIndex) {
+            return;
+        }
+        others.add(tgt, dragged);
+        orderCards.clear();
+        orderCards.addAll(others);
+        cardDragIndex = tgt;
+        cardOrderChanged = true;
+        for (int i = 0; i < orderCards.size(); i++) {
+            LinearLayout c = orderCards.get(i);
+            if (c == dragged) {
+                continue;
+            }
+            Ui.springY(c, slotTopFor(orderCards, i) - cardBaseTop.get(c));
+        }
+    }
+
+    private void dropCard(LinearLayout card) {
+        cardDragLifted = false;
+        float ty = slotTopFor(orderCards, cardDragIndex) - cardBaseTop.get(card);
+        if (cardGhost != null && cardGhostOverlay != null) {
+            Ui.springY(cardGhost, ty);
+            Ui.alpha(cardGhost, 0f);
+            final FrameLayout ov = cardGhostOverlay;
+            final ImageView ghost = cardGhost;
+            final Bitmap bmp = cardGhostBmp;
+            ov.postDelayed(() -> {
+                ghost.setImageBitmap(null);
+                if (bmp != null) {
+                    bmp.recycle();
+                }
+                if (ov.getParent() instanceof ViewGroup) {
+                    ((ViewGroup) ov.getParent()).removeView(ov);
+                }
+            }, 240);
+            cardGhost = null;
+            cardGhostOverlay = null;
+            cardGhostBmp = null;
+        }
+        Ui.springY(card, ty);
+        Ui.alpha(card, 1f);
+        Ui.haptic(card);
+        if (!cardOrderChanged) {
+            return;
+        }
+        List<String> keys = new ArrayList<>();
+        for (LinearLayout c : orderCards) {
+            keys.add(keyOf(c));
+        }
+        Prefs.setCardOrder(this, keys);
+        cardRoot.postDelayed(this::relayoutCards, 360);
+    }
+
+    /** 弹簧落定后按新顺序重排视图（不清空内容，不重播入场）。 */
+    private void relayoutCards() {
+        for (LinearLayout c : orderCards) {
+            Ui.cancel(c);
+            c.setTranslationY(0f);
+            c.setAlpha(1f);
+            cardRoot.removeView(c);
+        }
+        for (LinearLayout c : orderCards) {
+            cardRoot.addView(c);
+        }
+    }
+
+    private final class CardDragGesture implements View.OnTouchListener {
+        private final LinearLayout card;
+        private final Runnable liftRun;
+        private float downX, downY;
+        private boolean lifted;
+
+        CardDragGesture(LinearLayout card) {
+            this.card = card;
+            this.liftRun = () -> {
+                lifted = true;
+                liftCard(card);
+            };
+        }
+
+        private void cancelLift() {
+            card.removeCallbacks(liftRun);
+        }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent ev) {
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downX = ev.getRawX();
+                    downY = ev.getRawY();
+                    lifted = false;
+                    card.postDelayed(liftRun, LONG_PRESS_MS);
+                    Ui.springScale(card, 0.98f);
+                    return true;
+                case MotionEvent.ACTION_MOVE: {
+                    float dx = ev.getRawX() - downX;
+                    float dy = ev.getRawY() - downY;
+                    if (!lifted) {
+                        if (Math.abs(dx) > touchSlop || Math.abs(dy) > touchSlop) {
+                            cancelLift();
+                            Ui.springScale(card, 1f);
+                            return false;
+                        }
+                        return true;
+                    }
+                    if (!cardDragLifted) {
+                        return true;
+                    }
+                    card.setTranslationY(dy);
+                    if (cardGhost != null) {
+                        cardGhost.setTranslationY(dy);
+                    }
+                    float center = cardBaseTop.get(card) + cardBaseH.get(card) / 2f + dy;
+                    List<LinearLayout> others = new ArrayList<>(orderCards);
+                    others.remove(card);
+                    int target = 0;
+                    float y = cardBlockTop;
+                    for (LinearLayout c : others) {
+                        if (center > y + cardBaseH.get(c) / 2f) {
+                            target++;
+                        }
+                        y += cardBaseH.get(c) + cardSlotGap;
+                    }
+                    if (target != cardDragIndex) {
+                        moveCardTo(target);
+                        Ui.hapticTick(card);
+                    }
+                    return true;
+                }
+                case MotionEvent.ACTION_UP:
+                    cancelLift();
+                    if (lifted && cardDragLifted) {
+                        lifted = false;
+                        dropCard(card);
+                    } else {
+                        Ui.springScale(card, 1f);
+                        card.performClick();
+                    }
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    cancelLift();
+                    if (lifted && cardDragLifted) {
+                        lifted = false;
+                        dropCard(card);
+                    } else {
+                        Ui.springScale(card, 1f);
+                    }
+                    return true;
+                default:
+                    return true;
+            }
+        }
     }
 }

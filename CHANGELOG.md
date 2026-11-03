@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.1.14] - 2026-11-03
+
+### Added
+
+- Wallpaper card now shows the overwrite warning under 设为光栅壁纸: applying the live
+  wallpaper replaces the existing one, restoring the system default in Settings almost
+  certainly loses the original wallpaper, and lock-screen support is device-dependent
+  (README).
+- Main screen cards (光栅组 / 效果 / 预览 / 壁纸) can be reordered by long-press drag with
+  spring make-way and a haptic tick per crossing. The order is persisted. The 光栅组 card
+  only needs a long press because the whole card is already interactive.
+- Segmented controls support horizontal swipe to switch 过渡线 / 百叶窗 / 类OriginOS and
+  the axis options, with the same spring thumb movement and haptics.
+- 百叶窗 / 类OriginOS axis options gain 自动: the dominant tilt axis is chosen per gesture,
+  with 1.15x hysteresis so diagonal movement does not flip back and forth. Existing
+  axis_h settings migrate (0 横向 / 1 竖向).
+- Settings → 外观 gains a 卡片圆角 slider (0–36dp, default 22) that applies to cards,
+  grouped settings rows, dialogs and picker cards; Main rebuilds on return.
+
+### Changed
+
+- Sensitivity slider haptic feedback now scales with the value: amplitude 20–220 and
+  6–12ms, so low sensitivity ticks are softer and high sensitivity ticks stronger.
+  Adds the VIBRATE permission (normal, no prompt).
+- versionCode 15 / versionName 0.1.14.
+
 ## [0.1.13] - 2026-11-03
 
 ### Fixed

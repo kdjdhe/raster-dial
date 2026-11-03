@@ -14,6 +14,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +28,7 @@ public class SettingsActivity extends Activity {
     private boolean rebuilding;
     private ScrollView scrollRef;
     private int builtTheme;
+    private int builtRadius;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +54,7 @@ public class SettingsActivity extends Activity {
 
     private ScrollView buildContent() {
         builtTheme = Ui.themeIndex;
+        builtRadius = Ui.RADIUS;
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         Ui.attachEdgeTick(scroll);
@@ -170,6 +173,56 @@ public class SettingsActivity extends Activity {
         tHsv.addView(tRow);
         themeRow.addView(tHsv);
         Ui.groupRow(lookCard, themeRow, this);
+
+        // 全局卡片圆角：拖动实时显示数值，松手落盘并重建
+        LinearLayout radiusRow = new LinearLayout(this);
+        radiusRow.setOrientation(LinearLayout.VERTICAL);
+        radiusRow.setPadding(Ui.dp(this, 16), Ui.dp(this, 12),
+                Ui.dp(this, 16), Ui.dp(this, 14));
+        LinearLayout radiusHead = new LinearLayout(this);
+        radiusHead.setOrientation(LinearLayout.HORIZONTAL);
+        radiusHead.setGravity(Gravity.CENTER_VERTICAL);
+        TextView radiusLabel = Ui.text(this, "卡片圆角", 15, Ui.TEXT, false);
+        radiusHead.addView(radiusLabel, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView radiusValue = Ui.text(this, Ui.RADIUS + " dp", 13, Ui.TERTIARY, false);
+        radiusHead.addView(radiusValue);
+        radiusRow.addView(radiusHead);
+
+        SeekBar radiusBar = new SeekBar(this);
+        radiusBar.setMax(36);
+        radiusBar.setProgress(Ui.RADIUS);
+        radiusBar.setProgressTintList(ColorStateList.valueOf(Ui.ACCENT));
+        radiusBar.setThumbTintList(ColorStateList.valueOf(Ui.ACCENT));
+        radiusBar.setProgressBackgroundTintList(ColorStateList.valueOf(0xFF2A2A36));
+        radiusBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar sb, int p, boolean fromUser) {
+                if (!fromUser) {
+                    return;
+                }
+                Ui.RADIUS = Math.max(0, Math.min(36, p));
+                radiusValue.setText(p + " dp");
+                Ui.hapticTick(sb);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar sb) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar sb) {
+                Ui.setRadius(SettingsActivity.this, sb.getProgress());
+                rebuild();
+            }
+        });
+        LinearLayout.LayoutParams radiusLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        radiusLp.topMargin = Ui.dp(this, 4);
+        radiusRow.addView(radiusBar, radiusLp);
+        Ui.groupRow(lookCard, radiusRow, this);
+
         Ui.groupRow(lookCard, switchRow("震动反馈",
                 "切换、拖拽排序、过档等操作的触觉反馈",
                 Ui.haptics, (b, on) -> {
@@ -367,7 +420,7 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (Ui.themeIndex != builtTheme) {
+        if (Ui.themeIndex != builtTheme || Ui.RADIUS != builtRadius) {
             rebuild();
         }
     }

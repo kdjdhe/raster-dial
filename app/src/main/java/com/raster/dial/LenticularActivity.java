@@ -88,7 +88,7 @@ public class LenticularActivity extends Activity {
         view = new LenticularView(this, group.id);
         view.setStyle(getSharedPreferences("lock", MODE_PRIVATE).getInt("style", 0));
         view.setAxis(getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_line", 0),
-                getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_h", 0));
+                Prefs.axisH(this));
         view.setEyeStrength(getSharedPreferences("lock", MODE_PRIVATE)
                 .getFloat("eye_care_strength", 0f));
         root.addView(view, new FrameLayout.LayoutParams(
@@ -147,12 +147,11 @@ public class LenticularActivity extends Activity {
                 getSharedPreferences("lock", MODE_PRIVATE).getInt("style", 0)));
         int axisLineNow = Math.max(0, Math.min(2,
                 getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_line", 0)));
-        int axisHNow = Math.max(0, Math.min(1,
-                getSharedPreferences("lock", MODE_PRIVATE).getInt("axis_h", 0)));
+        int axisHNow = Prefs.axisH(this);
         String[] styleNames = {"过渡线", "百叶窗", "类OriginOS"};
         String axisDesc = styleNow == 0
                 ? new String[]{"全向", "仅横向", "仅竖向"}[axisLineNow]
-                : new String[]{"横向", "竖向"}[axisHNow];
+                : new String[]{"自动", "横向", "竖向"}[axisHNow];
         hint.setText(group.nameZh + " · " + styleNames[styleNow]
                 + "（" + axisDesc + "） · 上滑退出");
         hint.setTextSize(12);

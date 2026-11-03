@@ -12,6 +12,9 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.os.SystemClock;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -89,11 +92,20 @@ public final class Ui {
     public static final int HAIRLINE = 0x14FFFFFF;
     public static final int RIPPLE = 0x2AFFFFFF;
     public static int themeIndex = 0;
+    /** 全局卡片圆角（dp，0–36），设置页滑杆可调。 */
+    public static int RADIUS = 22;
     /** 全局触觉开关（设置页“震动反馈”）。 */
     public static boolean haptics = true;
 
     public static void setHaptics(boolean v) {
         haptics = v;
+    }
+
+    /** 设置并持久化卡片圆角（dp）；改完需重建界面以生效。 */
+    public static void setRadius(Context c, int dpValue) {
+        RADIUS = Math.max(0, Math.min(36, dpValue));
+        c.getSharedPreferences("lock", Context.MODE_PRIVATE)
+                .edit().putInt("radius", RADIUS).apply();
     }
 
     /** 应用并持久化主题；切换后需重建界面（或重进）以刷新所有已建视图。 */
@@ -121,6 +133,7 @@ public final class Ui {
                 c.getSharedPreferences("lock", Context.MODE_PRIVATE);
         applyTheme(c, sp.getInt("theme", 0));
         haptics = sp.getBoolean("haptics", true);
+        RADIUS = Math.max(0, Math.min(36, sp.getInt("radius", 22)));
     }
 
     public static int themeAccent(int idx) {
@@ -214,7 +227,7 @@ public final class Ui {
         LinearLayout l = new LinearLayout(c);
         l.setOrientation(LinearLayout.VERTICAL);
         l.setPadding(dp(c, 18), dp(c, 18), dp(c, 18), dp(c, 18));
-        l.setBackground(surface(c, CARD, 22));
+        l.setBackground(surface(c, CARD, RADIUS));
         return l;
     }
 
@@ -285,7 +298,7 @@ public final class Ui {
     public static LinearLayout group(Context c) {
         LinearLayout g = new LinearLayout(c);
         g.setOrientation(LinearLayout.VERTICAL);
-        g.setBackground(surface(c, CARD, 22));
+        g.setBackground(surface(c, CARD, RADIUS));
         g.setClipToOutline(true);
         return g;
     }
@@ -341,6 +354,31 @@ public final class Ui {
             return;
         }
         v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+    }
+
+    /** 力度渐变的 tick：strength 0..1 -> 振幅约 20..220、时长 6..12ms（灵敏度滑杆用）。 */
+    public static void hapticTick(View v, float strength) {
+        if (!haptics) {
+            return;
+        }
+        float sat = Math.max(0f, Math.min(1f, strength));
+        Vibrator vib = vibrator(v.getContext());
+        if (vib == null || !vib.hasVibrator() || !vib.hasAmplitudeControl()) {
+            v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+            return;
+        }
+        int amp = Math.max(1, Math.round(20 + 200 * sat));
+        int ms = 6 + Math.round(6 * sat);
+        vib.vibrate(VibrationEffect.createOneShot(ms, amp));
+    }
+
+    private static Vibrator vibrator(Context c) {
+        if (Build.VERSION.SDK_INT >= 31) {
+            VibratorManager vm =
+                    (VibratorManager) c.getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+            return vm == null ? null : vm.getDefaultVibrator();
+        }
+        return (Vibrator) c.getSystemService(Context.VIBRATOR_SERVICE);
     }
 
     /** 长震：长按进入某状态（如排序）。 */
@@ -513,7 +551,7 @@ public final class Ui {
                                          OnSegment listener) {
         // 外层胶囊；内层 FrameLayout 叠层：thumb 在下、等宽标签行在上。
         // 标签全部 weight 1f，段宽 = 行宽 / n，thumb 平移 idx * 段宽，几何确定。
-        LinearLayout seg = new LinearLayout(c);
+        final LinearLayout seg = new LinearLayout(c);
         seg.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(c, 3);
         seg.setPadding(pad, pad, pad, pad);
@@ -561,28 +599,66 @@ public final class Ui {
             thumb.setTranslationX(sel[0] * segW[0]);
         });
 
-        for (int i = 0; i < items.length; i++) {
-            final int idx = i;
-            labels[i].setOnClickListener(v -> {
-                if (idx == sel[0] || segW[0] <= 0f) {
+        // 点击与左右滑动共用同一个选择入口（滑动切换也带弹簧和触觉）
+        final class Selector {
+            void go(int idx, View from) {
+                if (idx < 0 || idx >= items.length || idx == sel[0] || segW[0] <= 0f) {
                     return;
                 }
-                haptic(v);
+                haptic(from);
                 labels[sel[0]].setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
                 labels[sel[0]].setTextColor(SECONDARY);
                 labels[idx].setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
                 labels[idx].setTextColor(TEXT);
                 // 弹簧滑到新段（从当前值起跳）
-                float from = thumb.getTranslationX();
-                float to = idx * segW[0];
+                float fromX = thumb.getTranslationX();
+                float toX = idx * segW[0];
                 ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
                 a.setInterpolator(new Spring(0.8f, 0.3f, 300));
                 a.addUpdateListener(anim -> thumb.setTranslationX(
-                        from + (to - from) * (float) anim.getAnimatedValue()));
+                        fromX + (toX - fromX) * (float) anim.getAnimatedValue()));
                 track(thumb, "x", a);
                 a.start();
                 sel[0] = idx;
                 listener.onSegment(idx);
+            }
+        }
+        final Selector selector = new Selector();
+
+        for (int i = 0; i < items.length; i++) {
+            final int idx = i;
+            final TextView label = labels[i];
+            label.setOnClickListener(v -> selector.go(idx, v));
+            final float[] downX = {0f};
+            final float[] downY = {0f};
+            final boolean[] swiped = {false};
+            label.setOnTouchListener((v, ev) -> {
+                switch (ev.getActionMasked()) {
+                    case android.view.MotionEvent.ACTION_DOWN:
+                        downX[0] = ev.getX();
+                        downY[0] = ev.getY();
+                        swiped[0] = false;
+                        return true;
+                    case android.view.MotionEvent.ACTION_MOVE: {
+                        float dx = ev.getX() - downX[0];
+                        float dy = ev.getY() - downY[0];
+                        if (!swiped[0] && Math.abs(dx) > dp(c, 20)
+                                && Math.abs(dx) > Math.abs(dy)) {
+                            swiped[0] = true;
+                            selector.go(sel[0] + (dx < 0 ? 1 : -1), v);
+                        }
+                        return true;
+                    }
+                    case android.view.MotionEvent.ACTION_UP:
+                        if (!swiped[0]) {
+                            v.performClick();
+                        }
+                        return true;
+                    case android.view.MotionEvent.ACTION_CANCEL:
+                        return true;
+                    default:
+                        return true;
+                }
             });
         }
         return seg;
@@ -668,7 +744,7 @@ public final class Ui {
         LinearLayout card = new LinearLayout(a);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(a, 20), dp(a, 20), dp(a, 20), dp(a, 16));
-        card.setBackground(surface(a, CARD, 24));
+        card.setBackground(surface(a, CARD, RADIUS));
 
         card.addView(type(a, title, 20, TEXT, Typeface.BOLD, -0.01f, 0));
         if (message != null && !message.isEmpty()) {

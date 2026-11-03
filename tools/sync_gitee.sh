@@ -39,7 +39,7 @@ git -C "$ROOT" -c http.proxy= -c https.proxy= push \
 
 echo "==> release $TAG"
 RELEASE_ID="$(curl -s --max-time 30 "$API/releases/tags/$TAG?access_token=$TOKEN" \
-  | python -X utf8 -I -c "import sys,json;d=json.load(sys.stdin);print(d.get('id') or '')")"
+  | python -X utf8 -I -c "import sys,json;d=json.load(sys.stdin) or {};print(d.get('id') or '')")"
 
 if [[ -z "$RELEASE_ID" ]]; then
   RELEASE_ID="$(curl -s --max-time 60 -X POST "$API/releases" \
@@ -57,7 +57,7 @@ else
 fi
 
 if curl -s --max-time 30 "$API/releases/tags/$TAG?access_token=$TOKEN" \
-  | python -X utf8 -I -c "import sys,json,os;n=os.environ['NAME'];print('yes' if any(a.get('name')==n for a in json.load(sys.stdin).get('assets',[])) else '')" \
+  | python -X utf8 -I -c "import sys,json,os;n=os.environ['NAME'];d=json.load(sys.stdin) or {};print('yes' if any(a.get('name')==n for a in (d.get('assets') or [])) else '')" \
   | grep -q yes; then
   echo "    attachment already present: $NAME"
 else

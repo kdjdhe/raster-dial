@@ -13,7 +13,9 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -54,6 +56,8 @@ public class MainActivity extends Activity {
     private final Map<LinearLayout, Integer> cardBaseTop = new HashMap<>();
     private final Map<LinearLayout, Integer> cardBaseH = new HashMap<>();
     private boolean cardDragLifted, cardOrderChanged;
+    // 壁纸设置：点击后检测是否真的打开了选择器 / 是否生效
+    private boolean wpPending, wpPickerSeen;
     private int cardDragIndex = -1;
     private int touchSlop;
     private ImageView cardGhost;
@@ -477,14 +481,105 @@ public class MainActivity extends Activity {
     }
 
     private void openWallpaperPicker() {
+        WallpaperManager wm = WallpaperManager.getInstance(this);
+        if (!wm.isWallpaperSupported()) {
+            Toast.makeText(this, "这台设备的系统不支持动态壁纸", Toast.LENGTH_LONG).show();
+            return;
+        }
+        wpPending = true;
+        wpPickerSeen = false;
         try {
             Intent i = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
             i.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
                     new ComponentName(this, LenticularWallpaperService.class));
             startActivity(i);
         } catch (Exception e) {
-            Toast.makeText(this, "打开壁纸选择器失败：" + e, Toast.LENGTH_LONG).show();
+            wpPending = false;
+            showWallpaperHelp("系统没有可用的壁纸设置界面。");
+            return;
         }
+        // 小米/澎湃：没有动态壁纸权限时 startActivity 会被静默吞掉，
+        // 界面停留在这里。1.2s 内既没进入 onPause 也没成为当前壁纸，就提示授权。
+        final View decor = findViewById(android.R.id.content);
+        decor.postDelayed(() -> {
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            if (wpPending && !wpPickerSeen && !isOurWallpaper()) {
+                wpPending = false;
+                showWallpaperHelp("系统没有打开壁纸设置界面。");
+            }
+        }, 1200);
+    }
+
+    private boolean isOurWallpaper() {
+        try {
+            android.app.WallpaperInfo info =
+                    WallpaperManager.getInstance(this).getWallpaperInfo();
+            return info != null && info.getComponent().equals(
+                    new ComponentName(this, LenticularWallpaperService.class));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** 壁纸没生效时的统一提示；MIUI 常见原因是缺少“动态壁纸”权限。 */
+    private void showWallpaperHelp(String extra) {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        String msg = (extra == null ? "" : extra + "\n\n")
+                + "小米 / 澎湃系统常见原因：未授予本应用「动态壁纸」权限，点击应用后系统无反应。\n"
+                + "请到「设置 → 应用 → Raster Dial → 权限」中允许动态壁纸，"
+                + "或使用系统的「壁纸与个性化」手动选择本壁纸。";
+        Ui.dialog(this, "壁纸没有生效？", msg, null, "去授权", false,
+                this::openWallpaperPermissionSettings, "知道了");
+    }
+
+    private void openWallpaperPermissionSettings() {
+        try {
+            Intent miui = new Intent("miui.intent.action.APP_PERM_EDITOR");
+            miui.setClassName("com.miui.securitycenter",
+                    "com.miui.permcenter.permissions.PermissionsEditorActivity");
+            miui.putExtra("extra_pkgname", getPackageName());
+            startActivity(miui);
+            return;
+        } catch (Exception ignored) {
+            // 非 MIUI 或版本不同，回退到应用详情页
+        }
+        try {
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            Toast.makeText(this, "打开权限设置失败：" + e, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (wpPending) {
+            wpPickerSeen = true;   // 确实有系统界面被打开
+        }
+    }
+
+    /** 从壁纸选择器返回：确认是否真的切换到了本壁纸。 */
+    private void checkWallpaperReturned() {
+        if (!wpPending || !wpPickerSeen) {
+            return;
+        }
+        wpPending = false;
+        final View decor = findViewById(android.R.id.content);
+        decor.postDelayed(() -> {
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            if (isOurWallpaper()) {
+                Toast.makeText(this, "已设为光栅壁纸", Toast.LENGTH_SHORT).show();
+            } else {
+                showWallpaperHelp("没有检测到壁纸切换成功。");
+            }
+        }, 600);
     }
 
     @Override
@@ -494,9 +589,10 @@ public class MainActivity extends Activity {
         UpdateChecker.resumePendingInstall(this);
         if (Ui.themeIndex != builtTheme || Ui.RADIUS != builtRadius) {
             rebuild();
-            return;
+        } else {
+            updateGroupCard();
         }
-        updateGroupCard();
+        checkWallpaperReturned();
     }
 
     // ---------- 主屏卡片长按拖动排序（高度不等的弹簧让位） ----------

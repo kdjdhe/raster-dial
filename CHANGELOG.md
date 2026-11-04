@@ -4,6 +4,11 @@
 
 ### Added
 
+- 设为光栅壁纸 now verifies the attempt: if the system picker never opens (HyperOS
+  without the 动态壁纸 permission silently drops the intent) a dialog explains the
+  permission and offers 去授权 (MIUI permission editor, falling back to app details);
+  after returning from the picker the app checks the active wallpaper component and
+  reports success or the same hint.
 - Wallpaper card now shows the overwrite warning under 设为光栅壁纸: applying the live
   wallpaper replaces the existing one, restoring the system default in Settings almost
   certainly loses the original wallpaper, and lock-screen support is device-dependent

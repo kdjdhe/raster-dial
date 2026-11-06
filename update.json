@@ -1,14 +1,14 @@
 {
-  "versionCode": 13,
-  "versionName": "0.1.12",
+  "versionCode": 14,
+  "versionName": "0.1.13",
   "minSdk": 28,
-  "publishedAt": "2026-11-03T07:53:39Z",
-  "sha256": "83e6003337df35ac4e62566e70b6876c6ba3a22d164f6cc226c67feb2ca22ea9",
-  "size": 8501585,
-  "notes": "0.1.12: 主屏预览只保留全屏；自定义组编辑器内可预览；槽位长按拖拽弹簧排序；弹窗与输入框统一。",
+  "publishedAt": "2026-11-06T01:10:46Z",
+  "sha256": "cff9ab4852e4fa61253085cde246d82d95d599f1ff89f86f95aa1e12d49d831d",
+  "size": 8517801,
+  "notes": "0.1.13: 系统字号适配；主屏卡片长按拖动排序；样式/方向长按拿起拖动；百叶窗/OOS 自动轴；卡片圆角滑杆；灵敏度震感渐变；壁纸覆盖警告与权限提示。",
   "apkUrls": [
-    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.12.apk",
-    "https://gitee.com/kdjdhe/raster-dial/releases/download/v0.1.12/raster-dial-0.1.12.apk",
-    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.12/raster-dial-0.1.12.apk"
+    "https://update.litanghub.top:8443/raster-dial/raster-dial-0.1.13.apk",
+    "https://gitee.com/kdjdhe/raster-dial/releases/download/v0.1.13/raster-dial-0.1.13.apk",
+    "https://github.com/kdjdhe/raster-dial/releases/download/v0.1.13/raster-dial-0.1.13.apk"
   ]
 }

@@ -21,6 +21,7 @@ import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -646,6 +647,11 @@ public final class Ui {
                 cancel(thumb);
                 startTx[0] = thumb.getTranslationX() - dx;
                 springScale(thumb, 1.08f);
+                // 拿起后手指移出控件/上下移动也要继续控制滑块，别让 ScrollView 抢走手势
+                ViewParent parent = seg.getParent();
+                if (parent != null) {
+                    parent.requestDisallowInterceptTouchEvent(true);
+                }
             }
 
             void endDrag() {
@@ -653,6 +659,10 @@ public final class Ui {
                 springXY(thumb, sel[0] * segW[0], 0f);
                 springScale(thumb, 1f);
                 haptic(thumb);
+                ViewParent parent = seg.getParent();
+                if (parent != null) {
+                    parent.requestDisallowInterceptTouchEvent(false);
+                }
             }
 
             @Override

@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.14] - 2026-11-03
+## [0.1.13] - 2026-11-06
 
 ### Added
 
@@ -35,10 +35,6 @@
 - Sensitivity slider haptic feedback now scales with the value: amplitude 20–220 and
   6–12ms, so low sensitivity ticks are softer and high sensitivity ticks stronger.
   Adds the VIBRATE permission (normal, no prompt).
-- versionCode 15 / versionName 0.1.14.
-
-## [0.1.13] - 2026-11-03
-
 ### Fixed
 
 - Layout now respects the system font size; labels no longer clip when the system
@@ -55,6 +51,7 @@
     pill is width-capped so it wraps.
   - At font scale >=1.5 the picker search box takes a full row with 导入 / 分享 below
     it, so the hint and query are never squeezed by the buttons.
+
 - versionCode 14 / versionName 0.1.13.
 
 ## [0.1.12] - 2026-11-03

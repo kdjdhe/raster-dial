@@ -562,6 +562,7 @@ public final class Ui {
         final TextView[] labels = new TextView[items.length];
 
         FrameLayout stage = new FrameLayout(c);
+        stage.setClipChildren(false);   // 拿起时滑块放大不被舞台裁掉
         seg.addView(stage, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -627,10 +628,11 @@ public final class Ui {
             final float[] downY = {0f};
             final float[] startTx = {0f};
             boolean pressed, dragging;
+            int pressIndex = -1;
             final Runnable liftRun = this::lift;
 
             void lift() {
-                if (!pressed || dragging || segW[0] <= 0f) {
+                if (!pressed || dragging || segW[0] <= 0f || pressIndex != sel[0]) {
                     return;
                 }
                 beginDrag(0f);
@@ -643,7 +645,7 @@ public final class Ui {
                 pressed = false;
                 cancel(thumb);
                 startTx[0] = thumb.getTranslationX() - dx;
-                springScale(thumb, 1.05f);
+                springScale(thumb, 1.08f);
             }
 
             void endDrag() {
@@ -659,6 +661,7 @@ public final class Ui {
                     case MotionEvent.ACTION_DOWN:
                         downX[0] = ev.getRawX();
                         downY[0] = ev.getRawY();
+                        pressIndex = (Integer) v.getTag();
                         pressed = true;
                         dragging = false;
                         thumb.postDelayed(liftRun, 220);
@@ -676,7 +679,8 @@ public final class Ui {
                             }
                             if (Math.abs(dx) <= dp(c, 10)
                                     || Math.abs(dx) <= Math.abs(dy)
-                                    || segW[0] <= 0f) {
+                                    || segW[0] <= 0f
+                                    || pressIndex != sel[0]) {
                                 return true;
                             }
                             thumb.removeCallbacks(liftRun);
@@ -718,6 +722,7 @@ public final class Ui {
         final ThumbDrag drag = new ThumbDrag();
         for (int i = 0; i < items.length; i++) {
             final int idx = i;
+            labels[i].setTag(idx);
             labels[i].setOnClickListener(v -> selector.apply(idx, v, true, true));
             labels[i].setOnTouchListener(drag);
         }

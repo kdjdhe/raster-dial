@@ -599,67 +599,127 @@ public final class Ui {
             thumb.setTranslationX(sel[0] * segW[0]);
         });
 
-        // 点击与左右滑动共用同一个选择入口（滑动切换也带弹簧和触觉）
+        // 点击 = 弹簧切换；长按当前段约 220ms 拿起滑块（轻微放大）后可左右拖动，
+        // 拖过相邻段中点即切换，松手回弹。横向快速滑动也直接进入拖动，保持顺手。
         final class Selector {
-            void go(int idx, View from) {
-                if (idx < 0 || idx >= items.length || idx == sel[0] || segW[0] <= 0f) {
+            void apply(int idx, View from, boolean feedback, boolean animateThumb) {
+                if (idx < 0 || idx >= items.length || idx == sel[0]) {
                     return;
                 }
-                haptic(from);
+                if (feedback) {
+                    haptic(from);
+                }
                 labels[sel[0]].setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
                 labels[sel[0]].setTextColor(SECONDARY);
                 labels[idx].setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
                 labels[idx].setTextColor(TEXT);
-                // 弹簧滑到新段（从当前值起跳）
-                float fromX = thumb.getTranslationX();
-                float toX = idx * segW[0];
-                ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
-                a.setInterpolator(new Spring(0.8f, 0.3f, 300));
-                a.addUpdateListener(anim -> thumb.setTranslationX(
-                        fromX + (toX - fromX) * (float) anim.getAnimatedValue()));
-                track(thumb, "x", a);
-                a.start();
                 sel[0] = idx;
+                if (animateThumb) {
+                    springXY(thumb, idx * segW[0], 0f);
+                }
                 listener.onSegment(idx);
             }
         }
         final Selector selector = new Selector();
 
-        for (int i = 0; i < items.length; i++) {
-            final int idx = i;
-            final TextView label = labels[i];
-            label.setOnClickListener(v -> selector.go(idx, v));
+        final class ThumbDrag implements View.OnTouchListener {
             final float[] downX = {0f};
             final float[] downY = {0f};
-            final boolean[] swiped = {false};
-            label.setOnTouchListener((v, ev) -> {
+            final float[] startTx = {0f};
+            boolean pressed, dragging;
+            final Runnable liftRun = this::lift;
+
+            void lift() {
+                if (!pressed || dragging || segW[0] <= 0f) {
+                    return;
+                }
+                beginDrag(0f);
+                hapticLong(thumb);
+            }
+
+            /** dx 为进入拖动时已经移动的距离，保证滑块不跳一下。 */
+            void beginDrag(float dx) {
+                dragging = true;
+                pressed = false;
+                cancel(thumb);
+                startTx[0] = thumb.getTranslationX() - dx;
+                springScale(thumb, 1.05f);
+            }
+
+            void endDrag() {
+                dragging = false;
+                springXY(thumb, sel[0] * segW[0], 0f);
+                springScale(thumb, 1f);
+                haptic(thumb);
+            }
+
+            @Override
+            public boolean onTouch(View v, MotionEvent ev) {
                 switch (ev.getActionMasked()) {
-                    case android.view.MotionEvent.ACTION_DOWN:
-                        downX[0] = ev.getX();
-                        downY[0] = ev.getY();
-                        swiped[0] = false;
+                    case MotionEvent.ACTION_DOWN:
+                        downX[0] = ev.getRawX();
+                        downY[0] = ev.getRawY();
+                        pressed = true;
+                        dragging = false;
+                        thumb.postDelayed(liftRun, 220);
                         return true;
-                    case android.view.MotionEvent.ACTION_MOVE: {
-                        float dx = ev.getX() - downX[0];
-                        float dy = ev.getY() - downY[0];
-                        if (!swiped[0] && Math.abs(dx) > dp(c, 20)
-                                && Math.abs(dx) > Math.abs(dy)) {
-                            swiped[0] = true;
-                            selector.go(sel[0] + (dx < 0 ? 1 : -1), v);
+                    case MotionEvent.ACTION_MOVE: {
+                        float dx = ev.getRawX() - downX[0];
+                        float dy = ev.getRawY() - downY[0];
+                        if (!dragging) {
+                            if (Math.abs(dy) > dp(c, 10)
+                                    && Math.abs(dy) >= Math.abs(dx)) {
+                                // 这是竖向滚动，不算长按
+                                thumb.removeCallbacks(liftRun);
+                                pressed = false;
+                                return false;
+                            }
+                            if (Math.abs(dx) <= dp(c, 10)
+                                    || Math.abs(dx) <= Math.abs(dy)
+                                    || segW[0] <= 0f) {
+                                return true;
+                            }
+                            thumb.removeCallbacks(liftRun);
+                            beginDrag(dx);
+                            haptic(thumb);
+                        }
+                        float maxTx = segW[0] * (items.length - 1);
+                        float tx = Math.max(0f, Math.min(maxTx, startTx[0] + dx));
+                        thumb.setTranslationX(tx);
+                        int idx = Math.max(0, Math.min(items.length - 1,
+                                Math.round(tx / segW[0])));
+                        if (idx != sel[0]) {
+                            selector.apply(idx, thumb, false, false);
+                            hapticTick(thumb);
                         }
                         return true;
                     }
-                    case android.view.MotionEvent.ACTION_UP:
-                        if (!swiped[0]) {
+                    case MotionEvent.ACTION_UP:
+                        thumb.removeCallbacks(liftRun);
+                        if (dragging) {
+                            endDrag();
+                        } else if (pressed) {
+                            pressed = false;
                             v.performClick();
                         }
                         return true;
-                    case android.view.MotionEvent.ACTION_CANCEL:
+                    case MotionEvent.ACTION_CANCEL:
+                        thumb.removeCallbacks(liftRun);
+                        if (dragging) {
+                            endDrag();
+                        }
+                        pressed = false;
                         return true;
                     default:
                         return true;
                 }
-            });
+            }
+        }
+        final ThumbDrag drag = new ThumbDrag();
+        for (int i = 0; i < items.length; i++) {
+            final int idx = i;
+            labels[i].setOnClickListener(v -> selector.apply(idx, v, true, true));
+            labels[i].setOnTouchListener(drag);
         }
         return seg;
     }

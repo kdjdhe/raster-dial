@@ -18,8 +18,11 @@
   only needs a long press because the whole card is already interactive. The swap
   threshold uses the dragged card's leading edge (half of the next/previous card), so a
   tall card grabbed near its top only needs a short drag to push its neighbour down.
-- Segmented controls support horizontal swipe to switch 过渡线 / 百叶窗 / 类OriginOS and
-  the axis options, with the same spring thumb movement and haptics.
+- Segmented controls can be dragged: long-press the selected segment (约 220ms), the
+  thumb scales up slightly and follows the finger 1:1; crossing a neighbour's midpoint
+  switches 过渡线 / 百叶窗 / 类OriginOS or the axis option live, with a haptic tick per
+  crossing, then springs to the slot on release. A quick horizontal swipe also enters
+  drag mode, so the control stays responsive; vertical movement still scrolls.
 - 百叶窗 / 类OriginOS axis options gain 自动: the dominant tilt axis is chosen per gesture,
   with 1.15x hysteresis so diagonal movement does not flip back and forth. Existing
   axis_h settings migrate (0 横向 / 1 竖向).
